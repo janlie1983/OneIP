@@ -9,7 +9,10 @@ import '../features/auth/presentation/screens/register_screen.dart';
 import '../features/lease_tracker/presentation/screens/lease_tracker_screen.dart';
 import '../features/permit_checklist/presentation/screens/permit_checklist_screen.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
+import '../features/site_selection/presentation/screens/compare_screen.dart';
 import '../features/site_selection/presentation/screens/site_selection_screen.dart';
+import '../features/site_selection/presentation/screens/zone_detail_screen.dart';
+import '../features/site_selection/domain/models/industrial_zone_model.dart';
 
 class _AuthChangeNotifier extends ChangeNotifier {
   _AuthChangeNotifier(Ref ref) {
@@ -59,6 +62,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/forgot-password',
         builder: (context, s) => const ForgotPasswordScreen(),
       ),
+      GoRoute(
+        path: '/zone-detail/:zoneId',
+        builder: (context, s) => ZoneDetailScreen(
+          zoneId: s.pathParameters['zoneId']!,
+          zone: s.extra as IndustrialZone?,
+        ),
+      ),
+      GoRoute(
+        path: '/zone-compare',
+        builder: (context, s) => const CompareScreen(),
+      ),
       ShellRoute(
         builder: (context, s, child) => _HomeShell(child: child),
         routes: [
@@ -91,18 +105,10 @@ class _HomeShell extends StatelessWidget {
 
   int _tabIndex(BuildContext context) {
     final loc = GoRouterState.of(context).matchedLocation;
-    switch (loc) {
-      case '/home/site-selection':
-        return 0;
-      case '/home/lease-tracker':
-        return 1;
-      case '/home/permit-checklist':
-        return 2;
-      case '/home/profile':
-        return 3;
-      default:
-        return 0;
-    }
+    if (loc.startsWith('/home/lease-tracker')) return 1;
+    if (loc.startsWith('/home/permit-checklist')) return 2;
+    if (loc.startsWith('/home/profile')) return 3;
+    return 0;
   }
 
   @override
