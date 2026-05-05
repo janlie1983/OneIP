@@ -12,6 +12,7 @@
         "fl_chart",
         "flutter",
         "flutter_dotenv",
+        "flutter_localizations",
         "flutter_riverpod",
         "freezed_annotation",
         "go_router",
@@ -159,15 +160,6 @@
         "flutter",
         "http",
         "path_provider"
-      ]
-    },
-    {
-      "name": "intl",
-      "version": "0.19.0",
-      "dependencies": [
-        "clock",
-        "meta",
-        "path"
       ]
     },
     {
@@ -321,6 +313,24 @@
       "name": "cupertino_icons",
       "version": "1.0.9",
       "dependencies": []
+    },
+    {
+      "name": "flutter_localizations",
+      "version": "0.0.0",
+      "dependencies": [
+        "flutter",
+        "intl",
+        "path"
+      ]
+    },
+    {
+      "name": "intl",
+      "version": "0.20.2",
+      "dependencies": [
+        "clock",
+        "meta",
+        "path"
+      ]
     },
     {
       "name": "flutter",

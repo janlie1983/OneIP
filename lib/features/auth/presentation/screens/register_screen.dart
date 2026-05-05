@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/loading_overlay.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/auth_text_field.dart';
@@ -23,12 +24,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   String? _selectedRole;
   bool _isLoading = false;
 
-  static const _roles = [
-    ('fdi_investor', 'Nhà đầu tư FDI'),
-    ('real_estate_broker', 'Môi giới BĐS'),
-    ('kcn_tenant', 'Chủ thuê KCN'),
-    ('kcn_developer', 'Developer KCN'),
-    ('other', 'Khác'),
+  List<(String, String)> _roles(AppLocalizations l) => [
+    ('fdi_investor', l.authRoleInvestor),
+    ('real_estate_broker', l.authRoleBroker),
+    ('kcn_tenant', l.authRoleTenant),
+    ('kcn_developer', l.authRoleDeveloper),
+    ('other', l.authRoleOther),
   ];
 
   @override
@@ -78,12 +79,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final roles = _roles(l);
+
     return LoadingOverlay(
       isLoading: _isLoading,
       child: Scaffold(
         backgroundColor: AppColors.backgroundLight,
         appBar: AppBar(
-          title: const Text('Tạo tài khoản'),
+          title: Text(l.authRegister),
           backgroundColor: AppColors.navy,
           foregroundColor: AppColors.textLight,
           elevation: 0,
@@ -98,39 +102,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 children: [
                   const SizedBox(height: 8),
                   AuthTextField(
-                    label: 'Họ và tên',
+                    label: l.authFullName,
                     hint: 'Nguyễn Văn A',
                     controller: _fullNameController,
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Vui lòng nhập họ và tên';
-                      }
+                      if (value == null || value.isEmpty) return 'Vui lòng nhập họ và tên';
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
                   AuthTextField(
-                    label: 'Email',
+                    label: l.authEmail,
                     hint: 'example@company.com',
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Vui lòng nhập email';
-                      }
+                      if (value == null || value.isEmpty) return 'Vui lòng nhập email';
                       if (!value.contains('@')) return 'Email không hợp lệ';
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
                   AuthTextField(
-                    label: 'Tên công ty',
+                    label: l.authCompany,
                     hint: 'Công ty TNHH ABC',
                     controller: _companyController,
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Vui lòng nhập tên công ty';
-                      }
+                      if (value == null || value.isEmpty) return 'Vui lòng nhập tên công ty';
                       return null;
                     },
                   ),
@@ -138,82 +136,65 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   DropdownButtonFormField<String>(
                     initialValue: _selectedRole,
                     decoration: InputDecoration(
-                      labelText: 'Vai trò',
+                      labelText: l.authRole,
                       filled: true,
                       fillColor: AppColors.backgroundLight,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppColors.border),
+                        borderSide: const BorderSide(color: AppColors.border),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppColors.border),
+                        borderSide: const BorderSide(color: AppColors.border),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppColors.navy, width: 2),
+                        borderSide: const BorderSide(color: AppColors.navy, width: 2),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 16),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     ),
-                    items: _roles
-                        .map((r) => DropdownMenuItem(
-                              value: r.$1,
-                              child: Text(r.$2),
-                            ))
+                    items: roles
+                        .map((r) => DropdownMenuItem(value: r.$1, child: Text(r.$2)))
                         .toList(),
-                    onChanged: (value) =>
-                        setState(() => _selectedRole = value),
-                    validator: (value) =>
-                        value == null ? 'Vui lòng chọn vai trò' : null,
+                    onChanged: (value) => setState(() => _selectedRole = value),
+                    validator: (value) => value == null ? 'Vui lòng chọn vai trò' : null,
                   ),
                   const SizedBox(height: 16),
                   AuthTextField(
-                    label: 'Mật khẩu',
+                    label: l.authPassword,
                     controller: _passwordController,
                     isPassword: true,
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Vui lòng nhập mật khẩu';
-                      }
-                      if (value.length < 6) {
-                        return 'Mật khẩu phải có ít nhất 6 ký tự';
-                      }
+                      if (value == null || value.isEmpty) return 'Vui lòng nhập mật khẩu';
+                      if (value.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự';
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
                   AuthTextField(
-                    label: 'Xác nhận mật khẩu',
+                    label: l.authConfirmPassword,
                     controller: _confirmPasswordController,
                     isPassword: true,
                     textInputAction: TextInputAction.done,
                     onEditingComplete: _register,
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Vui lòng xác nhận mật khẩu';
-                      }
-                      if (value != _passwordController.text) {
-                        return 'Mật khẩu không khớp';
-                      }
+                      if (value == null || value.isEmpty) return 'Vui lòng xác nhận mật khẩu';
+                      if (value != _passwordController.text) return 'Mật khẩu không khớp';
                       return null;
                     },
                   ),
                   const SizedBox(height: 32),
                   ElevatedButton(
                     onPressed: _register,
-                    child: const Text('Đăng ký'),
+                    child: Text(l.authRegister),
                   ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        'Đã có tài khoản? ',
-                        style: TextStyle(color: AppColors.textSecondary),
+                      Text(
+                        '${l.authHaveAccount} ',
+                        style: const TextStyle(color: AppColors.textSecondary),
                       ),
                       TextButton(
                         onPressed: () => context.pop(),
@@ -222,9 +203,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        child: const Text(
-                          'Đăng nhập',
-                          style: TextStyle(
+                        child: Text(
+                          l.authLogin,
+                          style: const TextStyle(
                             color: AppColors.navy,
                             fontWeight: FontWeight.w600,
                           ),

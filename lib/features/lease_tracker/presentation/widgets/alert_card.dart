@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/models/rate_alert_model.dart';
 import '../providers/lease_tracker_provider.dart';
 
@@ -12,6 +13,7 @@ class AlertCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context)!;
     return Dismissible(
       key: ValueKey(alert.id),
       direction: DismissDirection.endToStart,
@@ -27,16 +29,16 @@ class AlertCard extends ConsumerWidget {
       confirmDismiss: (_) => showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Xóa Alert'),
-          content: const Text('Bạn có muốn xóa alert giá này không?'),
+          title: Text(l.alertDeleteTitle),
+          content: Text(l.alertDeleteContent),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Hủy'),
+              child: Text(l.commonCancel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Xóa', style: TextStyle(color: AppColors.error)),
+              child: Text(l.commonDelete, style: const TextStyle(color: AppColors.error)),
             ),
           ],
         ),
@@ -101,6 +103,7 @@ class _AlertInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -120,7 +123,7 @@ class _AlertInfo extends StatelessWidget {
         if (alert.lastTriggeredAt != null) ...[
           const SizedBox(height: 2),
           Text(
-            'Kích hoạt lần cuối: ${DateFormat('dd/MM/yyyy').format(alert.lastTriggeredAt!)}',
+            l.alertLastTriggered(DateFormat('dd/MM/yyyy').format(alert.lastTriggeredAt!)),
             style: const TextStyle(fontSize: 11, color: AppColors.gold),
           ),
         ],

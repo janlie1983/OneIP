@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/models/market_insight_model.dart';
 import '../providers/lease_tracker_provider.dart';
 
@@ -20,6 +21,7 @@ class _MarketInsightCardState extends ConsumerState<MarketInsightCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final isPremium = ref.watch(isPremiumProvider);
     final insight = widget.insight;
     final isLocked = insight.isPremium && !isPremium;
@@ -70,7 +72,7 @@ class _MarketInsightCardState extends ConsumerState<MarketInsightCard> {
                   GestureDetector(
                     onTap: () => setState(() => _expanded = !_expanded),
                     child: Text(
-                      _expanded ? 'Thu gọn ▲' : 'Xem thêm ▼',
+                      _expanded ? l.insightCollapse : l.insightExpand,
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.navy,
@@ -81,7 +83,7 @@ class _MarketInsightCardState extends ConsumerState<MarketInsightCard> {
                 ],
               ),
             ),
-            if (isLocked) _buildPremiumOverlay(context),
+            if (isLocked) _buildPremiumOverlay(context, l),
           ],
         ),
       ),
@@ -159,7 +161,7 @@ class _MarketInsightCardState extends ConsumerState<MarketInsightCard> {
     );
   }
 
-  Widget _buildPremiumOverlay(BuildContext context) {
+  Widget _buildPremiumOverlay(BuildContext context, AppLocalizations l) {
     return Positioned.fill(
       child: ClipRect(
         child: BackdropFilter(
@@ -173,18 +175,18 @@ class _MarketInsightCardState extends ConsumerState<MarketInsightCard> {
                   const Icon(Icons.lock_outline,
                       size: 32, color: AppColors.gold),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Nội dung Premium',
-                    style: TextStyle(
+                  Text(
+                    l.insightPremiumContent,
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: AppColors.navy,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Nâng cấp để đọc báo cáo đầy đủ',
-                    style: TextStyle(
+                  Text(
+                    l.insightPremiumUpgradePrompt,
+                    style: const TextStyle(
                         fontSize: 12, color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 10),
@@ -199,7 +201,7 @@ class _MarketInsightCardState extends ConsumerState<MarketInsightCard> {
                       textStyle: const TextStyle(
                           fontSize: 13, fontWeight: FontWeight.w600),
                     ),
-                    child: const Text('Nâng cấp Pro'),
+                    child: Text(l.insightUpgradePro),
                   ),
                 ],
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/models/lease_rate_model.dart';
 
 class RateTableHeader extends StatelessWidget {
@@ -17,6 +18,7 @@ class RateTableHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Container(
       color: AppColors.navy.withValues(alpha: 0.05),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -24,21 +26,21 @@ class RateTableHeader extends StatelessWidget {
         children: [
           Expanded(
             flex: 3,
-            child: _HeaderCell('KCN', 'zone', sortColumn, sortAscending, onSort),
+            child: _HeaderCell(l.tableHeaderZone, 'zone', sortColumn, sortAscending, onSort),
           ),
           Expanded(
             flex: 2,
-            child: _HeaderCell('Giá (USD)', 'price', sortColumn, sortAscending, onSort),
+            child: _HeaderCell(l.tableHeaderPrice, 'price', sortColumn, sortAscending, onSort),
           ),
           Expanded(
             flex: 2,
-            child: _HeaderCell('Thay đổi', 'change', sortColumn, sortAscending, onSort),
+            child: _HeaderCell(l.tableHeaderChange, 'change', sortColumn, sortAscending, onSort),
           ),
-          const Expanded(
+          Expanded(
             flex: 1,
             child: Text(
-              'Nguồn',
-              style: TextStyle(
+              l.tableHeaderSource,
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondary,

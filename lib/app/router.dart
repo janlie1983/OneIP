@@ -7,7 +7,11 @@ import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/register_screen.dart';
 import '../features/lease_tracker/presentation/screens/lease_tracker_screen.dart';
+import '../features/permit_checklist/domain/models/user_checklist_model.dart';
+import '../l10n/app_localizations.dart';
+import '../features/permit_checklist/presentation/screens/checklist_detail_screen.dart';
 import '../features/permit_checklist/presentation/screens/permit_checklist_screen.dart';
+import '../features/permit_checklist/presentation/screens/template_selector_screen.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
 import '../features/site_selection/presentation/screens/compare_screen.dart';
 import '../features/site_selection/presentation/screens/site_selection_screen.dart';
@@ -73,6 +77,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/zone-compare',
         builder: (context, s) => const CompareScreen(),
       ),
+      GoRoute(
+        path: '/permit-templates',
+        builder: (context, s) => const TemplateSelectorScreen(),
+      ),
+      GoRoute(
+        path: '/checklist-detail/:checklistId',
+        builder: (context, s) => ChecklistDetailScreen(
+          checklistId: s.pathParameters['checklistId']!,
+          checklist: s.extra as UserChecklist?,
+        ),
+      ),
       ShellRoute(
         builder: (context, s, child) => _HomeShell(child: child),
         routes: [
@@ -132,22 +147,22 @@ class _HomeShell extends StatelessWidget {
         selectedItemColor: AppColors.navy,
         unselectedItemColor: AppColors.textSecondary,
         type: BottomNavigationBarType.fixed,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.location_city),
-            label: 'Chọn địa điểm',
+            icon: const Icon(Icons.location_city),
+            label: AppLocalizations.of(context)?.navSiteSelection ?? 'Chọn địa điểm',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.trending_up),
-            label: 'Giá thuê',
+            icon: const Icon(Icons.trending_up),
+            label: AppLocalizations.of(context)?.navLeaseTracker ?? 'Giá thuê',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.checklist),
-            label: 'Giấy phép',
+            icon: const Icon(Icons.checklist),
+            label: AppLocalizations.of(context)?.navPermitChecklist ?? 'Giấy phép',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Hồ sơ',
+            icon: const Icon(Icons.person),
+            label: AppLocalizations.of(context)?.navProfile ?? 'Hồ sơ',
           ),
         ],
       ),

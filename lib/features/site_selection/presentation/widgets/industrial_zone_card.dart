@@ -1,8 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/models/industrial_zone_model.dart';
 import '../providers/site_selection_provider.dart';
+
+String _regionLabel(AppLocalizations l, String region) {
+  switch (region) {
+    case 'North':
+      return l.regionNorth;
+    case 'Central':
+      return l.regionCentral;
+    case 'South':
+      return l.regionSouth;
+    default:
+      return region;
+  }
+}
 
 class IndustrialZoneCard extends ConsumerWidget {
   final IndustrialZone zone;
@@ -20,6 +34,7 @@ class IndustrialZoneCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context)!;
     final compareZones = ref.watch(compareZonesProvider);
     final isComparing = compareZones.any((z) => z.id == zone.id);
 
@@ -44,15 +59,15 @@ class IndustrialZoneCard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(context, ref, isComparing, compareZones),
+                _buildHeader(context, ref, l, isComparing, compareZones),
                 const SizedBox(height: 12),
-                _buildScoreBars(),
+                _buildScoreBars(l),
                 const SizedBox(height: 12),
-                _buildStatsRow(),
+                _buildStatsRow(l),
                 const SizedBox(height: 10),
                 _buildIndustriesRow(),
                 const SizedBox(height: 12),
-                _buildFooter(),
+                _buildFooter(l),
               ],
             ),
           ),
@@ -61,8 +76,8 @@ class IndustrialZoneCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, WidgetRef ref, bool isComparing,
-      List<IndustrialZone> compareZones) {
+  Widget _buildHeader(BuildContext context, WidgetRef ref, AppLocalizations l,
+      bool isComparing, List<IndustrialZone> compareZones) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -84,7 +99,7 @@ class IndustrialZoneCard extends ConsumerWidget {
                 runSpacing: 4,
                 children: [
                   _Badge(label: zone.province, color: AppColors.navy),
-                  _Badge(label: _regionLabel(zone.region), color: AppColors.textSecondary),
+                  _Badge(label: _regionLabel(l, zone.region), color: AppColors.textSecondary),
                   if ((zone.taxIncentiveYears ?? 0) >= 10)
                     _TaxBadge(years: zone.taxIncentiveYears!),
                 ],
@@ -105,8 +120,8 @@ class IndustrialZoneCard extends ConsumerWidget {
               notifier.state = [...compareZones, zone];
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Tối đa 3 khu để so sánh'),
+                SnackBar(
+                  content: Text(l.compareMaxZones),
                   backgroundColor: AppColors.warning,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -118,26 +133,26 @@ class IndustrialZoneCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildScoreBars() {
+  Widget _buildScoreBars(AppLocalizations l) {
     return Column(
       children: [
-        _ScoreBar(label: 'Hạ tầng', value: zone.infraScore ?? 0, color: AppColors.navy),
+        _ScoreBar(label: l.zoneInfraScore, value: zone.infraScore ?? 0, color: AppColors.navy),
         const SizedBox(height: 5),
-        _ScoreBar(label: 'Lao động', value: zone.laborScore ?? 0, color: AppColors.gold),
+        _ScoreBar(label: l.zoneLaborScore, value: zone.laborScore ?? 0, color: AppColors.gold),
         const SizedBox(height: 5),
-        _ScoreBar(label: 'Logistics', value: zone.logisticsScore ?? 0, color: AppColors.info),
+        _ScoreBar(label: l.zoneLogisticsScore, value: zone.logisticsScore ?? 0, color: AppColors.info),
       ],
     );
   }
 
-  Widget _buildStatsRow() {
+  Widget _buildStatsRow(AppLocalizations l) {
     return Row(
       children: [
         _StatChip(
           icon: Icons.attach_money,
           label: zone.leasePriceUsd != null
               ? '\$${zone.leasePriceUsd!.toStringAsFixed(0)}/m²/n'
-              : 'Liên hệ',
+              : l.commonContact,
         ),
         const SizedBox(width: 6),
         _StatChip(
@@ -181,7 +196,7 @@ class IndustrialZoneCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildFooter() {
+  Widget _buildFooter(AppLocalizations l) {
     return Row(
       children: [
         if (zone.developer != null)
@@ -200,30 +215,17 @@ class IndustrialZoneCard extends ConsumerWidget {
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Xem chi tiết', style: TextStyle(fontSize: 13)),
-              SizedBox(width: 4),
-              Icon(Icons.arrow_forward_ios, size: 11),
+              Text(l.siteSelectionViewDetail, style: const TextStyle(fontSize: 13)),
+              const SizedBox(width: 4),
+              const Icon(Icons.arrow_forward_ios, size: 11),
             ],
           ),
         ),
       ],
     );
-  }
-
-  String _regionLabel(String region) {
-    switch (region) {
-      case 'North':
-        return 'Miền Bắc';
-      case 'Central':
-        return 'Miền Trung';
-      case 'South':
-        return 'Miền Nam';
-      default:
-        return region;
-    }
   }
 }
 

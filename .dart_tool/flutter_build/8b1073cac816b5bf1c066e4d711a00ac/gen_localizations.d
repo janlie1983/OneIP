@@ -1,0 +1,1 @@
+ /Volumes/QUANG_SSD/Apps/OneIP/lib/l10n/app_localizations_en.dart /Volumes/QUANG_SSD/Apps/OneIP/lib/l10n/app_localizations_vi.dart /Volumes/QUANG_SSD/Apps/OneIP/lib/l10n/app_localizations.dart:  /Volumes/QUANG_SSD/Apps/OneIP/l10n.yaml /Volumes/QUANG_SSD/Apps/OneIP/lib/l10n/app_en.arb /Volumes/QUANG_SSD/Apps/OneIP/lib/l10n/app_vi.arb

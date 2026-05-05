@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../providers/lease_tracker_provider.dart';
 
 class MarketStatCard extends StatelessWidget {
@@ -9,6 +10,7 @@ class MarketStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final isUp = stats.trendPercent > 0;
     final isFlat = stats.trendPercent.abs() < 0.1;
     final trendColor = isFlat
@@ -80,7 +82,7 @@ class MarketStatCard extends StatelessWidget {
               const SizedBox(width: 3),
               Text(
                 isFlat
-                    ? 'Ổn định'
+                    ? l.leaseTrackerStable
                     : '${stats.trendPercent.abs().toStringAsFixed(1)}%',
                 style: TextStyle(
                   fontSize: 12,
@@ -97,11 +99,11 @@ class MarketStatCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _MiniStat(
-                label: 'Min',
+                label: l.leaseTrackerMin,
                 value: '\$${stats.minPrice.toStringAsFixed(0)}',
               ),
               _MiniStat(
-                label: 'Max',
+                label: l.leaseTrackerMax,
                 value: '\$${stats.maxPrice.toStringAsFixed(0)}',
               ),
             ],

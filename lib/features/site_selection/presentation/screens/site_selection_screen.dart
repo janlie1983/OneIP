@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../domain/models/site_selection_query_model.dart';
 import '../providers/site_selection_provider.dart';
@@ -21,24 +22,20 @@ const _industries = [
   'Other',
 ];
 
-const _industryLabels = {
-  'Electronics': 'Điện tử',
-  'Auto Parts': 'Linh kiện ô tô',
-  'Garment & Footwear': 'May mặc & Giày dép',
-  'Food Processing': 'Chế biến thực phẩm',
-  'Heavy Industry': 'Công nghiệp nặng',
-  'Logistics': 'Logistics',
-  'Petrochemical': 'Hóa dầu',
-  'High-Tech': 'Công nghệ cao',
-  'Manufacturing': 'Sản xuất',
-  'Other': 'Khác',
-};
-
-const _sortLabels = {
-  SortOption.score: 'Điểm phù hợp',
-  SortOption.price: 'Giá thấp nhất',
-  SortOption.area: 'Diện tích trống',
-};
+String _industryLabel(AppLocalizations l, String industry) {
+  switch (industry) {
+    case 'Electronics':      return l.industryElectronics;
+    case 'Auto Parts':       return l.industryAutoParts;
+    case 'Garment & Footwear': return l.industryGarment;
+    case 'Food Processing':  return l.industryFoodProcessing;
+    case 'Heavy Industry':   return l.industryHeavy;
+    case 'Logistics':        return l.industryLogistics;
+    case 'Petrochemical':    return l.industryPetrochemical;
+    case 'High-Tech':        return l.industryHighTech;
+    case 'Manufacturing':    return l.industryManufacturing;
+    default:                 return l.industryOther;
+  }
+}
 
 class SiteSelectionScreen extends ConsumerStatefulWidget {
   const SiteSelectionScreen({super.key});
@@ -51,7 +48,7 @@ class _SiteSelectionScreenState extends ConsumerState<SiteSelectionScreen> {
   String _selectedIndustry = '';
   double _requiredAreaM2 = 2000;
   int _headcount = 100;
-  String? _preferredRegion; // null = Any
+  String? _preferredRegion;
   final Set<String> _selectedPriorities = {};
   double? _maxBudgetUsd;
   bool _showBudget = false;
@@ -83,7 +80,6 @@ class _SiteSelectionScreenState extends ConsumerState<SiteSelectionScreen> {
       );
       return;
     }
-
     final query = SiteSelectionQuery(
       industry: _selectedIndustry,
       requiredAreaM2: _requiredAreaM2,
@@ -92,7 +88,6 @@ class _SiteSelectionScreenState extends ConsumerState<SiteSelectionScreen> {
       maxBudgetUsd: _showBudget ? _maxBudgetUsd : null,
       priorityFactors: _selectedPriorities.toList(),
     );
-
     ref.read(siteSelectionQueryProvider.notifier).state = query;
     ref.read(sortOptionProvider.notifier).state = SortOption.score;
   }
@@ -109,10 +104,8 @@ class _SiteSelectionScreenState extends ConsumerState<SiteSelectionScreen> {
       backgroundColor: AppColors.backgroundLight,
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
-        transitionBuilder: (child, animation) => FadeTransition(
-          opacity: animation,
-          child: child,
-        ),
+        transitionBuilder: (child, animation) =>
+            FadeTransition(opacity: animation, child: child),
         child: query == null
             ? _FormView(
                 key: const ValueKey('form'),
@@ -148,8 +141,6 @@ class _SiteSelectionScreenState extends ConsumerState<SiteSelectionScreen> {
     );
   }
 }
-
-// ── Form View ─────────────────────────────────────────────────────────────────
 
 class _FormView extends StatelessWidget {
   final String selectedIndustry;
@@ -193,50 +184,28 @@ class _FormView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     return CustomScrollView(
       slivers: [
-        _buildAppBar(),
+        _buildAppBar(l),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              _buildStep(
-                number: 1,
-                title: 'Ngành công nghiệp',
-                child: _buildIndustrySelector(),
-              ),
+              _buildStep(number: 1, title: l.siteSelectionIndustry, child: _buildIndustrySelector(l)),
               const SizedBox(height: 12),
-              _buildStep(
-                number: 2,
-                title: 'Diện tích cần thuê',
-                child: _buildAreaInput(context),
-              ),
+              _buildStep(number: 2, title: l.siteSelectionArea, child: _buildAreaInput(context)),
               const SizedBox(height: 12),
-              _buildStep(
-                number: 3,
-                title: 'Số lượng nhân sự',
-                child: _buildHeadcountInput(),
-              ),
+              _buildStep(number: 3, title: l.siteSelectionHeadcount, child: _buildHeadcountInput(l)),
               const SizedBox(height: 12),
-              _buildStep(
-                number: 4,
-                title: 'Khu vực ưu tiên',
-                child: _buildRegionSelector(context),
-              ),
+              _buildStep(number: 4, title: l.siteSelectionRegion, child: _buildRegionSelector(l)),
               const SizedBox(height: 12),
-              _buildStep(
-                number: 5,
-                title: 'Yếu tố ưu tiên',
-                child: _buildPrioritySelector(),
-              ),
+              _buildStep(number: 5, title: l.siteSelectionPriority, child: _buildPrioritySelector(l)),
               const SizedBox(height: 12),
-              _buildStep(
-                number: 6,
-                title: 'Ngân sách tối đa (tùy chọn)',
-                child: _buildBudgetInput(context),
-              ),
+              _buildStep(number: 6, title: l.siteSelectionBudget, child: _buildBudgetInput(context, l)),
               const SizedBox(height: 24),
-              PrimaryButton(label: 'Tìm kiếm KCN phù hợp', onPressed: onSearch),
+              PrimaryButton(label: l.siteSelectionSearch, onPressed: onSearch),
             ]),
           ),
         ),
@@ -244,7 +213,7 @@ class _FormView extends StatelessWidget {
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(AppLocalizations l) {
     return SliverAppBar(
       pinned: true,
       expandedHeight: 120,
@@ -252,9 +221,10 @@ class _FormView extends StatelessWidget {
       foregroundColor: Colors.white,
       automaticallyImplyLeading: false,
       flexibleSpace: FlexibleSpaceBar(
-        title: const Text(
-          'Tìm Khu Công Nghiệp',
-          style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
+        title: Text(
+          l.siteSelectionTitle,
+          style: const TextStyle(
+              color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
         ),
         background: Container(
           decoration: const BoxDecoration(
@@ -264,13 +234,13 @@ class _FormView extends StatelessWidget {
               colors: [AppColors.navy, Color(0xFF2C4A7A)],
             ),
           ),
-          child: const Align(
+          child: Align(
             alignment: Alignment.topRight,
             child: Padding(
-              padding: EdgeInsets.only(top: 60, right: 20),
+              padding: const EdgeInsets.only(top: 60, right: 20),
               child: Text(
-                'Chọn địa điểm FDI lý tưởng',
-                style: TextStyle(color: Colors.white54, fontSize: 13),
+                l.siteSelectionSubtitle,
+                style: const TextStyle(color: Colors.white54, fontSize: 13),
               ),
             ),
           ),
@@ -279,11 +249,7 @@ class _FormView extends StatelessWidget {
     );
   }
 
-  Widget _buildStep({
-    required int number,
-    required String title,
-    required Widget child,
-  }) {
+  Widget _buildStep({required int number, required String title, required Widget child}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -332,14 +298,14 @@ class _FormView extends StatelessWidget {
     );
   }
 
-  Widget _buildIndustrySelector() {
+  Widget _buildIndustrySelector(AppLocalizations l) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: _industries.map((industry) {
         final isSelected = industry == selectedIndustry;
         return FilterChip(
-          label: Text(_industryLabels[industry] ?? industry),
+          label: Text(_industryLabel(l, industry)),
           selected: isSelected,
           onSelected: (_) => onIndustrySelected(industry),
           selectedColor: AppColors.navy,
@@ -349,9 +315,7 @@ class _FormView extends StatelessWidget {
           ),
           checkmarkColor: Colors.white,
           backgroundColor: AppColors.backgroundLight,
-          side: BorderSide(
-            color: isSelected ? AppColors.navy : AppColors.border,
-          ),
+          side: BorderSide(color: isSelected ? AppColors.navy : AppColors.border),
         );
       }).toList(),
     );
@@ -392,7 +356,8 @@ class _FormView extends StatelessWidget {
                 decoration: const InputDecoration(
                   suffixText: 'm²',
                   isDense: true,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                 ),
                 onChanged: (v) {
                   final parsed = double.tryParse(v);
@@ -405,7 +370,8 @@ class _FormView extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('500 m²', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+            const Text('500 m²',
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
             Text(
               '${requiredAreaM2.toStringAsFixed(0)} m²',
               style: const TextStyle(
@@ -414,14 +380,15 @@ class _FormView extends StatelessWidget {
                 color: AppColors.navy,
               ),
             ),
-            const Text('50,000 m²', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+            const Text('50,000 m²',
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildHeadcountInput() {
+  Widget _buildHeadcountInput(AppLocalizations l) {
     return Row(
       children: [
         _CounterButton(
@@ -441,10 +408,11 @@ class _FormView extends StatelessWidget {
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             textAlign: TextAlign.center,
-            decoration: const InputDecoration(
-              suffixText: 'người',
+            decoration: InputDecoration(
+              suffixText: l.commonPerson,
               isDense: true,
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
             onChanged: (v) {
               final parsed = int.tryParse(v);
@@ -465,18 +433,18 @@ class _FormView extends StatelessWidget {
     );
   }
 
-  Widget _buildRegionSelector(BuildContext context) {
-    final segments = <String?, String>{
-      null: 'Tất cả',
-      'North': 'Miền Bắc',
-      'Central': 'Miền Trung',
-      'South': 'Miền Nam',
+  Widget _buildRegionSelector(AppLocalizations l) {
+    final regions = <String?, String>{
+      null: l.regionAll,
+      'North': l.regionNorth,
+      'Central': l.regionCentral,
+      'South': l.regionSouth,
     };
 
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: segments.entries.map((entry) {
+      children: regions.entries.map((entry) {
         final isSelected = preferredRegion == entry.key;
         return ChoiceChip(
           label: Text(entry.value),
@@ -494,13 +462,13 @@ class _FormView extends StatelessWidget {
     );
   }
 
-  Widget _buildPrioritySelector() {
-    const priorities = {
-      'infra': 'Hạ tầng',
-      'labor': 'Lao động',
-      'logistics': 'Logistics',
-      'price': 'Giá thuê',
-      'tax': 'Ưu đãi thuế',
+  Widget _buildPrioritySelector(AppLocalizations l) {
+    final priorities = {
+      'infra': l.priorityInfra,
+      'labor': l.priorityLabor,
+      'logistics': l.priorityLogistics,
+      'price': l.priorityPrice,
+      'tax': l.priorityTax,
     };
 
     return Wrap(
@@ -525,7 +493,7 @@ class _FormView extends StatelessWidget {
     );
   }
 
-  Widget _buildBudgetInput(BuildContext context) {
+  Widget _buildBudgetInput(BuildContext context, AppLocalizations l) {
     return Column(
       children: [
         Row(
@@ -537,7 +505,9 @@ class _FormView extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              showBudget ? 'Tối đa \$${(maxBudgetUsd ?? 100).toStringAsFixed(0)}/m²/năm' : 'Không giới hạn',
+              showBudget
+                  ? 'Tối đa \$${(maxBudgetUsd ?? 100).toStringAsFixed(0)}/m²${l.commonPerYear}'
+                  : l.commonNoLimit,
               style: TextStyle(
                 fontSize: 14,
                 color: showBudget ? AppColors.navy : AppColors.textSecondary,
@@ -563,9 +533,9 @@ class _FormView extends StatelessWidget {
               onChanged: onBudgetChanged,
             ),
           ),
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Text('\$50', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
               Text('\$200', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
             ],
@@ -585,9 +555,16 @@ class _ResultsView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context)!;
     final scoredAsync = ref.watch(scoredResultsProvider);
     final sortOption = ref.watch(sortOptionProvider);
     final compareZones = ref.watch(compareZonesProvider);
+
+    final sortLabels = {
+      SortOption.score: l.zoneOverallScore,
+      SortOption.price: l.priorityPrice,
+      SortOption.area: l.zoneAvailableArea,
+    };
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -600,18 +577,18 @@ class _ResultsView extends ConsumerWidget {
         ),
         title: scoredAsync.whenOrNull(
               data: (zones) => Text(
-                'Tìm thấy ${zones.length} KCN phù hợp',
+                l.siteSelectionResults(zones.length),
                 style: const TextStyle(fontSize: 16, color: Colors.white),
               ),
             ) ??
-            const Text('Đang tìm kiếm...', style: TextStyle(fontSize: 16, color: Colors.white)),
+            const Text('...', style: TextStyle(fontSize: 16, color: Colors.white)),
         actions: [
           if (compareZones.isNotEmpty)
             TextButton.icon(
               onPressed: () => context.push('/zone-compare'),
               icon: const Icon(Icons.compare, color: AppColors.gold, size: 18),
               label: Text(
-                'So sánh (${compareZones.length})',
+                '${l.siteSelectionCompare} (${compareZones.length})',
                 style: const TextStyle(color: AppColors.gold, fontSize: 13),
               ),
             ),
@@ -619,12 +596,10 @@ class _ResultsView extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          _buildSortBar(context, ref, sortOption),
+          _buildSortBar(context, ref, sortOption, sortLabels),
           Expanded(
             child: scoredAsync.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: AppColors.navy),
-              ),
+              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.navy)),
               error: (e, _) => _ErrorState(onRetry: onReset),
               data: (zones) => zones.isEmpty
                   ? _EmptyState(onReset: onReset)
@@ -654,22 +629,24 @@ class _ResultsView extends ConsumerWidget {
           child: OutlinedButton.icon(
             onPressed: onReset,
             icon: const Icon(Icons.tune, size: 18),
-            label: const Text('Tìm kiếm lại'),
+            label: Text(l.siteSelectionSearchAgain),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSortBar(BuildContext context, WidgetRef ref, SortOption current) {
+  Widget _buildSortBar(BuildContext context, WidgetRef ref, SortOption current,
+      Map<SortOption, String> sortLabels) {
+    final l = AppLocalizations.of(context)!;
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          const Text(
-            'Sắp xếp: ',
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          Text(
+            '${l.commonSort}: ',
+            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
           ...SortOption.values.map((option) {
             final isSelected = option == current;
@@ -687,7 +664,7 @@ class _ResultsView extends ConsumerWidget {
                     ),
                   ),
                   child: Text(
-                    _sortLabels[option]!,
+                    sortLabels[option]!,
                     style: TextStyle(
                       fontSize: 12,
                       color: isSelected ? Colors.white : AppColors.textSecondary,
@@ -704,14 +681,13 @@ class _ResultsView extends ConsumerWidget {
   }
 }
 
-// ── Empty & Error states ──────────────────────────────────────────────────────
-
 class _EmptyState extends StatelessWidget {
   final VoidCallback onReset;
   const _EmptyState({required this.onReset});
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -720,22 +696,13 @@ class _EmptyState extends StatelessWidget {
           children: [
             const Icon(Icons.search_off, size: 64, color: AppColors.textSecondary),
             const SizedBox(height: 16),
-            const Text(
-              'Không tìm thấy KCN phù hợp',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppColors.navy,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Thử thay đổi tiêu chí tìm kiếm để có thêm kết quả',
+            Text(
+              l.siteSelectionNoResults,
+              style: const TextStyle(fontSize: 16, color: AppColors.navy),
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
-            PrimaryButton(label: 'Tìm kiếm lại', onPressed: onReset),
+            PrimaryButton(label: l.siteSelectionSearchAgain, onPressed: onReset),
           ],
         ),
       ),
@@ -749,6 +716,7 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -757,26 +725,19 @@ class _ErrorState extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline, size: 64, color: AppColors.error),
             const SizedBox(height: 16),
-            const Text(
-              'Có lỗi xảy ra',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.navy),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Không thể tải dữ liệu. Vui lòng thử lại.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary),
+            Text(
+              l.commonError,
+              style: const TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.navy),
             ),
             const SizedBox(height: 24),
-            PrimaryButton(label: 'Thử lại', onPressed: onRetry),
+            PrimaryButton(label: l.commonRetry, onPressed: onRetry),
           ],
         ),
       ),
     );
   }
 }
-
-// ── Helper widgets ────────────────────────────────────────────────────────────
 
 class _CounterButton extends StatelessWidget {
   final IconData icon;

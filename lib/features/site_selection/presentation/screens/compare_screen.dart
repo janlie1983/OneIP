@@ -3,16 +3,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../domain/models/industrial_zone_model.dart';
 import '../../domain/models/site_selection_query_model.dart';
 import '../providers/site_selection_provider.dart';
+
+String _regionLabel(AppLocalizations l, String region) {
+  switch (region) {
+    case 'North':
+      return l.regionNorth;
+    case 'Central':
+      return l.regionCentral;
+    case 'South':
+      return l.regionSouth;
+    default:
+      return region;
+  }
+}
 
 class CompareScreen extends ConsumerWidget {
   const CompareScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context)!;
     final zones = ref.watch(compareZonesProvider);
 
     return Scaffold(
@@ -25,14 +40,14 @@ class CompareScreen extends ConsumerWidget {
           onPressed: () => context.pop(),
         ),
         title: Text(
-          'So sánh ${zones.length} KCN',
+          l.compareTitle(zones.length),
           style: const TextStyle(color: Colors.white),
         ),
         actions: [
           TextButton.icon(
             onPressed: () => ref.read(compareZonesProvider.notifier).state = [],
             icon: const Icon(Icons.clear_all, color: Colors.white70, size: 18),
-            label: const Text('Xóa tất cả', style: TextStyle(color: Colors.white70, fontSize: 13)),
+            label: Text(l.compareClearAll, style: const TextStyle(color: Colors.white70, fontSize: 13)),
           ),
         ],
       ),
@@ -62,6 +77,7 @@ class _CompareTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final colWidth = math.max(
         140.0, (MediaQuery.of(context).size.width - 120) / zones.length);
 
@@ -74,7 +90,7 @@ class _CompareTable extends StatelessWidget {
       border: TableBorder.all(color: AppColors.border, width: 0.5),
       children: [
         _headerRow(zones),
-        ..._buildRows(zones),
+        ..._buildRows(l, zones),
       ],
     );
   }
@@ -83,56 +99,61 @@ class _CompareTable extends StatelessWidget {
     return TableRow(
       decoration: const BoxDecoration(color: AppColors.navy),
       children: [
-        const _TableCell(text: 'Tiêu chí', isHeader: true, isLabel: true),
+        Builder(
+          builder: (context) {
+            final l = AppLocalizations.of(context)!;
+            return _TableCell(text: l.compareCriteria, isHeader: true, isLabel: true);
+          },
+        ),
         ...zones.map((z) => _TableCell(text: z.name, isHeader: true)),
       ],
     );
   }
 
-  List<TableRow> _buildRows(List<IndustrialZone> zones) {
+  List<TableRow> _buildRows(AppLocalizations l, List<IndustrialZone> zones) {
     return [
-      _textRow('Tỉnh', zones.map((z) => z.province).toList()),
-      _textRow('Vùng', zones.map((z) => _regionLabel(z.region)).toList()),
-      _numericRow('Điểm hạ tầng', zones.map((z) => z.infraScore?.toDouble()).toList(), higherBetter: true),
-      _numericRow('Điểm lao động', zones.map((z) => z.laborScore?.toDouble()).toList(), higherBetter: true),
-      _numericRow('Điểm logistics', zones.map((z) => z.logisticsScore?.toDouble()).toList(), higherBetter: true),
+      _textRow(l.compareProvinceRow, zones.map((z) => z.province).toList()),
+      _textRow(l.compareRegionRow, zones.map((z) => _regionLabel(l, z.region)).toList()),
+      _numericRow(l.compareInfraScoreRow, zones.map((z) => z.infraScore?.toDouble()).toList(), higherBetter: true),
+      _numericRow(l.compareLaborScoreRow, zones.map((z) => z.laborScore?.toDouble()).toList(), higherBetter: true),
+      _numericRow(l.compareLogisticsScoreRow, zones.map((z) => z.logisticsScore?.toDouble()).toList(), higherBetter: true),
       _numericRow(
-        'Giá thuê (USD/m²/năm)',
+        l.comparePriceRow,
         zones.map((z) => z.leasePriceUsd).toList(),
         higherBetter: false,
         format: (v) => '\$${v.toStringAsFixed(0)}',
       ),
       _numericRow(
-        'Diện tích trống (ha)',
+        l.compareAreaRow,
         zones.map((z) => z.availableAreaHa).toList(),
         higherBetter: true,
         format: (v) => '${v.toStringAsFixed(0)} ha',
       ),
       _numericRow(
-        'Tỷ lệ lấp đầy (%)',
+        l.compareOccupancyRow,
         zones.map((z) => z.occupancyRate).toList(),
         higherBetter: false,
         format: (v) => '${v.toStringAsFixed(0)}%',
       ),
       _numericRow(
-        'Ưu đãi thuế (năm)',
+        l.compareTaxRow,
         zones.map((z) => z.taxIncentiveYears?.toDouble()).toList(),
         higherBetter: true,
         format: (v) => '${v.toStringAsFixed(0)}n',
       ),
       _numericRow(
-        'Đến cảng biển (km)',
+        l.compareSeaportRow,
         zones.map((z) => z.distanceToSeaportKm).toList(),
         higherBetter: false,
         format: (v) => '${v.toStringAsFixed(0)} km',
       ),
       _numericRow(
-        'Đến sân bay (km)',
+        l.compareAirportRow,
         zones.map((z) => z.distanceToAirportKm).toList(),
         higherBetter: false,
         format: (v) => '${v.toStringAsFixed(0)} km',
       ),
-      _textRow('Chủ đầu tư', zones.map((z) => z.developer ?? '-').toList()),
+      _textRow(l.compareDeveloperRow, zones.map((z) => z.developer ?? '-').toList()),
     ];
   }
 
@@ -185,19 +206,6 @@ class _CompareTable extends StatelessWidget {
       }
       return null;
     }).toList();
-  }
-
-  String _regionLabel(String region) {
-    switch (region) {
-      case 'North':
-        return 'Miền Bắc';
-      case 'Central':
-        return 'Miền Trung';
-      case 'South':
-        return 'Miền Nam';
-      default:
-        return region;
-    }
   }
 }
 
@@ -257,6 +265,7 @@ class _SaveBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context)!;
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -265,20 +274,20 @@ class _SaveBar extends ConsumerWidget {
           border: Border(top: BorderSide(color: AppColors.border)),
         ),
         child: ElevatedButton.icon(
-          onPressed: () => _saveResult(context, ref),
+          onPressed: () => _saveResult(context, ref, l),
           icon: const Icon(Icons.save_alt, size: 18),
-          label: const Text('Lưu kết quả so sánh'),
+          label: Text(l.compareSaveResult),
         ),
       ),
     );
   }
 
-  Future<void> _saveResult(BuildContext context, WidgetRef ref) async {
+  Future<void> _saveResult(BuildContext context, WidgetRef ref, AppLocalizations l) async {
     final user = ref.read(currentUserProvider);
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng đăng nhập để lưu kết quả'),
+        SnackBar(
+          content: Text(l.compareLoginRequired),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -295,8 +304,8 @@ class _SaveBar extends ConsumerWidget {
       );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã lưu kết quả thành công!'),
+          SnackBar(
+            content: Text(l.compareSavedSuccess),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
           ),
@@ -305,8 +314,8 @@ class _SaveBar extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Không thể lưu. Vui lòng thử lại.'),
+          SnackBar(
+            content: Text(l.compareSavedError),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
           ),
@@ -322,6 +331,7 @@ class _EmptyCompare extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -330,24 +340,24 @@ class _EmptyCompare extends StatelessWidget {
           children: [
             const Icon(Icons.compare, size: 64, color: AppColors.textSecondary),
             const SizedBox(height: 16),
-            const Text(
-              'Chưa có KCN để so sánh',
-              style: TextStyle(
+            Text(
+              l.compareEmptyTitle,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppColors.navy,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Thêm KCN vào danh sách so sánh từ kết quả tìm kiếm',
+            Text(
+              l.compareEmptySubtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: onBack,
-              child: const Text('Quay lại tìm kiếm'),
+              child: Text(l.compareBackToSearch),
             ),
           ],
         ),
@@ -355,4 +365,3 @@ class _EmptyCompare extends StatelessWidget {
     );
   }
 }
-

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../providers/lease_tracker_provider.dart';
 import '../widgets/alert_card.dart';
 import '../widgets/market_insight_card.dart';
@@ -11,8 +12,29 @@ import '../widgets/rate_table_row.dart';
 import '../../domain/models/rate_alert_model.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
-const _regions = {'All': 'Tất cả', 'North': 'Miền Bắc', 'Central': 'Miền Trung', 'South': 'Miền Nam'};
-const _assetTypes = {'factory': 'Nhà xưởng', 'warehouse': 'Kho bãi', 'land': 'Đất KCN', 'office': 'Văn phòng'};
+Map<String, String> _buildRegionMap(AppLocalizations l) => {
+  'All': l.regionAll,
+  'North': l.regionNorth,
+  'Central': l.regionCentral,
+  'South': l.regionSouth,
+};
+
+Map<String, String> _buildAssetTypeMap(AppLocalizations l) => {
+  'factory': l.assetFactory,
+  'warehouse': l.assetWarehouse,
+  'land': l.assetLand,
+  'office': l.assetOffice,
+};
+
+String _assetTypeLabel(AppLocalizations l, String? key) {
+  switch (key) {
+    case 'factory': return l.assetFactory;
+    case 'warehouse': return l.assetWarehouse;
+    case 'land': return l.assetLand;
+    case 'office': return l.assetOffice;
+    default: return key ?? '';
+  }
+}
 
 class LeaseTrackerScreen extends ConsumerStatefulWidget {
   const LeaseTrackerScreen({super.key});
@@ -47,15 +69,16 @@ class _LeaseTrackerScreenState extends ConsumerState<LeaseTrackerScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
         backgroundColor: AppColors.navy,
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'Theo dõi giá thuê KCN',
-          style: TextStyle(
+        title: Text(
+          l.leaseTrackerTitle,
+          style: const TextStyle(
               color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
         ),
         actions: [
@@ -69,9 +92,9 @@ class _LeaseTrackerScreenState extends ConsumerState<LeaseTrackerScreen>
           indicatorColor: AppColors.gold,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white60,
-          tabs: const [
-            Tab(text: 'Thị Trường'),
-            Tab(text: 'Price Alerts'),
+          tabs: [
+            Tab(text: l.leaseTrackerMarket),
+            Tab(text: l.leaseTrackerAlerts),
           ],
         ),
       ),
@@ -137,6 +160,7 @@ class _MarketTabState extends ConsumerState<_MarketTab> {
 class _FreeTierBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -149,10 +173,10 @@ class _FreeTierBanner extends StatelessWidget {
         children: [
           const Icon(Icons.schedule, size: 18, color: AppColors.warning),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: Text(
-              'Dữ liệu miễn phí có độ trễ 30 ngày. Nâng cấp Pro để nhận số liệu thời gian thực.',
-              style: TextStyle(fontSize: 12, color: AppColors.navy),
+              l.leaseTrackerFreeDelay,
+              style: const TextStyle(fontSize: 12, color: AppColors.navy),
             ),
           ),
           const SizedBox(width: 8),
@@ -164,9 +188,8 @@ class _FreeTierBanner extends StatelessWidget {
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: const Text('Nâng cấp',
-                style:
-                    TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+            child: Text(l.leaseTrackerUpgrade,
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -177,8 +200,11 @@ class _FreeTierBanner extends StatelessWidget {
 class _FilterBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context)!;
     final selectedRegion = ref.watch(selectedRegionProvider);
     final selectedAsset = ref.watch(selectedAssetTypeProvider);
+    final regions = _buildRegionMap(l);
+    final assetTypes = _buildAssetTypeMap(l);
 
     return Container(
       color: Colors.white,
@@ -189,8 +215,8 @@ class _FilterBar extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              'Khu vực',
-              style: TextStyle(
+              l.leaseTrackerRegion,
+              style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textSecondary),
@@ -202,7 +228,7 @@ class _FilterBar extends ConsumerWidget {
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: _regions.entries.map((e) {
+              children: regions.entries.map((e) {
                 final isSelected = selectedRegion == e.key;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -220,8 +246,7 @@ class _FilterBar extends ConsumerWidget {
                     ),
                     side: BorderSide(
                         color: isSelected ? AppColors.navy : AppColors.border),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   ),
                 );
               }).toList(),
@@ -231,8 +256,8 @@ class _FilterBar extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              'Loại tài sản',
-              style: TextStyle(
+              l.leaseTrackerAssetType,
+              style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textSecondary),
@@ -244,7 +269,7 @@ class _FilterBar extends ConsumerWidget {
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: _assetTypes.entries.map((e) {
+              children: assetTypes.entries.map((e) {
                 final isSelected = selectedAsset == e.key;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -263,8 +288,7 @@ class _FilterBar extends ConsumerWidget {
                     ),
                     side: BorderSide(
                         color: isSelected ? AppColors.gold : AppColors.border),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   ),
                 );
               }).toList(),
@@ -279,6 +303,7 @@ class _FilterBar extends ConsumerWidget {
 class _StatsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context)!;
     final statsAsync = ref.watch(marketStatsProvider);
 
     return Padding(
@@ -286,9 +311,9 @@ class _StatsSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Tổng quan thị trường',
-            style: TextStyle(
+          Text(
+            l.leaseTrackerMarketOverview,
+            style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: AppColors.navy),
@@ -303,9 +328,9 @@ class _StatsSection extends ConsumerWidget {
                 separatorBuilder: (_, _) => const SizedBox(width: 10),
                 itemBuilder: (_, _) => const MarketStatCardSkeleton(),
               ),
-              error: (_, _) => const Center(
-                child: Text('Không thể tải số liệu',
-                    style: TextStyle(color: AppColors.textSecondary)),
+              error: (_, _) => Center(
+                child: Text(l.commonNoData,
+                    style: const TextStyle(color: AppColors.textSecondary)),
               ),
               data: (statsList) => ListView.separated(
                 scrollDirection: Axis.horizontal,
@@ -325,12 +350,12 @@ class _StatsSection extends ConsumerWidget {
 class _ChartSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context)!;
     final selectedZone = ref.watch(selectedZoneProvider);
     final selectedAsset = ref.watch(selectedAssetTypeProvider);
     final historyAsync = ref.watch(rateHistoryProvider);
     final ratesAsync = ref.watch(leaseRatesProvider);
 
-    // Build zone list from current rates for the dropdown
     final zones = ratesAsync.whenOrNull(
           data: (rates) =>
               rates.map((r) => r.zoneName).toSet().toList()..sort(),
@@ -350,10 +375,10 @@ class _ChartSection extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Biểu đồ giá theo thời gian',
-                  style: TextStyle(
+                  l.leaseTrackerChart,
+                  style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: AppColors.navy),
@@ -378,7 +403,7 @@ class _ChartSection extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Text(
-                '${_assetTypes[selectedAsset] ?? selectedAsset} · $selectedZone',
+                '${_assetTypeLabel(l, selectedAsset)} · $selectedZone',
                 style: const TextStyle(
                     fontSize: 12, color: AppColors.textSecondary),
               ),
@@ -388,9 +413,9 @@ class _ChartSection extends ConsumerWidget {
             height: 220,
             child: historyAsync.when(
               loading: () => const _ChartSkeleton(),
-              error: (_, _) => const Center(
-                child: Text('Không thể tải biểu đồ',
-                    style: TextStyle(color: AppColors.textSecondary)),
+              error: (_, _) => Center(
+                child: Text(l.commonNoData,
+                    style: const TextStyle(color: AppColors.textSecondary)),
               ),
               data: (rates) => RateChartWidget(
                 rates: rates,
@@ -417,6 +442,7 @@ class _PriceTableSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context)!;
     final currentRatesAsync = ref.watch(currentRatesProvider);
 
     return Container(
@@ -433,9 +459,9 @@ class _PriceTableSection extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(12, 14, 12, 8),
             child: Row(
               children: [
-                const Text(
-                  'Bảng giá hiện tại',
-                  style: TextStyle(
+                Text(
+                  l.leaseTrackerTable,
+                  style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: AppColors.navy),
@@ -443,7 +469,7 @@ class _PriceTableSection extends ConsumerWidget {
                 const Spacer(),
                 currentRatesAsync.whenOrNull(
                       data: (rows) => Text(
-                        '${rows.length} KCN',
+                        l.leaseTrackerKcnCount(rows.length),
                         style: const TextStyle(
                             fontSize: 12, color: AppColors.textSecondary),
                       ),
@@ -463,10 +489,10 @@ class _PriceTableSection extends ConsumerWidget {
                 ),
                 currentRatesAsync.when(
                   loading: () => const _TableSkeleton(),
-                  error: (_, _) => const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text('Không thể tải bảng giá',
-                        style: TextStyle(color: AppColors.textSecondary)),
+                  error: (_, _) => Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(l.commonNoData,
+                        style: const TextStyle(color: AppColors.textSecondary)),
                   ),
                   data: (rows) {
                     final sorted = _sortRows([...rows], sortColumn, sortAscending);
@@ -513,16 +539,17 @@ class _PriceTableSection extends ConsumerWidget {
 class _InsightsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context)!;
     final insightsAsync = ref.watch(marketInsightsProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
           child: Text(
-            'Tin tức thị trường',
-            style: TextStyle(
+            l.leaseTrackerNews,
+            style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: AppColors.navy),
@@ -533,10 +560,10 @@ class _InsightsSection extends ConsumerWidget {
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: _InsightSkeleton(),
           ),
-          error: (_, _) => const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text('Không thể tải tin tức',
-                style: TextStyle(color: AppColors.textSecondary)),
+          error: (_, _) => Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(l.commonNoData,
+                style: const TextStyle(color: AppColors.textSecondary)),
           ),
           data: (insights) => Column(
             children: insights
@@ -570,7 +597,7 @@ class _AlertsTab extends ConsumerWidget {
         loading: () => const Center(
             child: CircularProgressIndicator(color: AppColors.navy)),
         error: (_, _) => const Center(
-          child: Text('Không thể tải alerts',
+          child: Text('—',
               style: TextStyle(color: AppColors.textSecondary)),
         ),
         data: (alerts) => alerts.isEmpty
@@ -598,22 +625,22 @@ class _AlertsTab extends ConsumerWidget {
 
   void _showCreateSheet(
       BuildContext context, WidgetRef ref, bool isPremium, int currentCount) {
+    final l = AppLocalizations.of(context)!;
     if (!isPremium && currentCount >= 2) {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Giới hạn Free'),
-          content: const Text(
-              'Tài khoản miễn phí chỉ được tạo tối đa 2 price alerts.\nNâng cấp Pro để tạo không giới hạn.'),
+          title: Text(l.leaseTrackerFreeLimitTitle),
+          content: Text(l.leaseTrackerFreeLimitContent),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Đóng'),
+              child: Text(l.commonClose),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx),
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold),
-              child: const Text('Nâng cấp Pro'),
+              child: Text(l.planUpgradeButton),
             ),
           ],
         ),
@@ -640,6 +667,7 @@ class _LoginPrompt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -648,21 +676,21 @@ class _LoginPrompt extends StatelessWidget {
           children: [
             const Icon(Icons.notifications_none, size: 64, color: AppColors.textSecondary),
             const SizedBox(height: 16),
-            const Text(
-              'Đăng nhập để tạo Price Alerts',
-              style: TextStyle(
+            Text(
+              l.leaseTrackerLoginPromptTitle,
+              style: const TextStyle(
                   fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.navy),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Nhận thông báo khi giá thuê KCN thay đổi theo tiêu chí bạn quan tâm.',
+            Text(
+              l.leaseTrackerLoginPromptSub,
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {},
-              child: const Text('Đăng nhập'),
+              child: Text(l.authLogin),
             ),
           ],
         ),
@@ -677,6 +705,7 @@ class _EmptyAlerts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -686,24 +715,24 @@ class _EmptyAlerts extends StatelessWidget {
             const Icon(Icons.notifications_none,
                 size: 64, color: AppColors.textSecondary),
             const SizedBox(height: 16),
-            const Text(
-              'Chưa có alert nào',
-              style: TextStyle(
+            Text(
+              l.leaseTrackerNoAlertsTitle,
+              style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: AppColors.navy),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Tạo alert đầu tiên để nhận thông báo khi giá thay đổi.',
+            Text(
+              l.leaseTrackerNoAlertsSub,
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: onCreateTap,
               icon: const Icon(Icons.add, size: 18),
-              label: const Text('Tạo Alert đầu tiên'),
+              label: Text(l.leaseTrackerCreateFirstAlert),
             ),
           ],
         ),
@@ -736,13 +765,14 @@ class _CreateAlertSheetState extends ConsumerState<_CreateAlertSheet> {
   }
 
   Future<void> _save() async {
+    final l = AppLocalizations.of(context)!;
     final user = ref.read(currentUserProvider);
     if (user == null) return;
 
     final threshold = double.tryParse(_thresholdController.text);
     if (threshold == null || threshold <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập giá ngưỡng hợp lệ')),
+        SnackBar(content: Text(l.leaseTrackerAlertInvalidThreshold)),
       );
       return;
     }
@@ -761,9 +791,10 @@ class _CreateAlertSheetState extends ConsumerState<_CreateAlertSheet> {
       if (mounted) Navigator.pop(context);
     } catch (_) {
       if (mounted) {
+        final l2 = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Không thể tạo alert. Vui lòng thử lại.'),
+          SnackBar(
+            content: Text(l2.leaseTrackerAlertError),
             backgroundColor: AppColors.error,
           ),
         );
@@ -775,6 +806,9 @@ class _CreateAlertSheetState extends ConsumerState<_CreateAlertSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final assetTypes = _buildAssetTypeMap(l);
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -796,27 +830,27 @@ class _CreateAlertSheetState extends ConsumerState<_CreateAlertSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Tạo Price Alert',
-            style: TextStyle(
+          Text(
+            l.leaseTrackerAlertCreate,
+            style: const TextStyle(
                 fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.navy),
           ),
           const SizedBox(height: 20),
           TextField(
             controller: _zoneController,
-            decoration: const InputDecoration(
-              labelText: 'Tên KCN (tùy chọn)',
-              hintText: 'Ví dụ: VSIP Bac Ninh',
-              prefixIcon: Icon(Icons.location_city_outlined),
+            decoration: InputDecoration(
+              labelText: l.leaseTrackerAlertZoneName,
+              hintText: l.leaseTrackerAlertZoneHint,
+              prefixIcon: const Icon(Icons.location_city_outlined),
             ),
           ),
           const SizedBox(height: 14),
-          const Text('Loại tài sản',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.navy)),
+          Text(l.leaseTrackerAssetType,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.navy)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
-            children: _assetTypes.entries.map((e) {
+            children: assetTypes.entries.map((e) {
               final isSelected = _selectedAsset == e.key;
               return ChoiceChip(
                 label: Text(e.value),
@@ -837,9 +871,9 @@ class _CreateAlertSheetState extends ConsumerState<_CreateAlertSheet> {
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
             ],
-            decoration: const InputDecoration(
-              labelText: 'Giá ngưỡng (USD/m²/năm)',
-              prefixIcon: Icon(Icons.attach_money),
+            decoration: InputDecoration(
+              labelText: l.leaseTrackerAlertThreshold,
+              prefixIcon: const Icon(Icons.attach_money),
               suffixText: 'USD',
             ),
             onChanged: (v) {
@@ -848,13 +882,13 @@ class _CreateAlertSheetState extends ConsumerState<_CreateAlertSheet> {
             },
           ),
           const SizedBox(height: 14),
-          const Text('Kích hoạt khi',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.navy)),
+          Text(l.leaseTrackerAlertDirection,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.navy)),
           const SizedBox(height: 8),
           Row(
             children: [
               _DirectionChip(
-                label: 'Khi giá vượt',
+                label: l.leaseTrackerPriceAbove,
                 value: 'above',
                 selected: _direction == 'above',
                 color: AppColors.error,
@@ -862,7 +896,7 @@ class _CreateAlertSheetState extends ConsumerState<_CreateAlertSheet> {
               ),
               const SizedBox(width: 10),
               _DirectionChip(
-                label: 'Khi giá xuống dưới',
+                label: l.leaseTrackerPriceBelow,
                 value: 'below',
                 selected: _direction == 'below',
                 color: AppColors.success,
@@ -882,7 +916,7 @@ class _CreateAlertSheetState extends ConsumerState<_CreateAlertSheet> {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text('Tạo Alert'),
+                  : Text(l.leaseTrackerAlertSave),
             ),
           ),
         ],

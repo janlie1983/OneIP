@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/loading_overlay.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/auth_text_field.dart';
@@ -14,8 +15,7 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
       _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState
-    extends ConsumerState<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   bool _isLoading = false;
@@ -51,12 +51,14 @@ class _ForgotPasswordScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     return LoadingOverlay(
       isLoading: _isLoading,
       child: Scaffold(
         backgroundColor: AppColors.backgroundLight,
         appBar: AppBar(
-          title: const Text('Đặt lại mật khẩu'),
+          title: Text(l.authForgotPassword),
           backgroundColor: AppColors.navy,
           foregroundColor: AppColors.textLight,
           elevation: 0,
@@ -64,30 +66,26 @@ class _ForgotPasswordScreenState
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: _emailSent ? _buildSuccessView() : _buildFormView(),
+            child: _emailSent ? _buildSuccessView(l) : _buildFormView(l),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFormView() {
+  Widget _buildFormView(AppLocalizations l) {
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 32),
-          const Icon(
-            Icons.lock_reset,
-            size: 64,
-            color: AppColors.navy,
-          ),
+          const Icon(Icons.lock_reset, size: 64, color: AppColors.navy),
           const SizedBox(height: 24),
-          const Text(
-            'Quên mật khẩu?',
+          Text(
+            l.authForgotPassword,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
               color: AppColors.navy,
@@ -101,16 +99,14 @@ class _ForgotPasswordScreenState
           ),
           const SizedBox(height: 32),
           AuthTextField(
-            label: 'Email',
+            label: l.authEmail,
             hint: 'example@company.com',
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.done,
             onEditingComplete: _sendResetLink,
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Vui lòng nhập email';
-              }
+              if (value == null || value.isEmpty) return 'Vui lòng nhập email';
               if (!value.contains('@')) return 'Email không hợp lệ';
               return null;
             },
@@ -118,14 +114,14 @@ class _ForgotPasswordScreenState
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: _sendResetLink,
-            child: const Text('Gửi link đặt lại mật khẩu'),
+            child: Text(l.authSendResetLink),
           ),
           const SizedBox(height: 16),
           TextButton(
             onPressed: () => context.pop(),
-            child: const Text(
-              'Quay lại đăng nhập',
-              style: TextStyle(color: AppColors.navy),
+            child: Text(
+              l.authLogin,
+              style: const TextStyle(color: AppColors.navy),
             ),
           ),
         ],
@@ -133,7 +129,7 @@ class _ForgotPasswordScreenState
     );
   }
 
-  Widget _buildSuccessView() {
+  Widget _buildSuccessView(AppLocalizations l) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -166,7 +162,7 @@ class _ForgotPasswordScreenState
         const SizedBox(height: 32),
         ElevatedButton(
           onPressed: () => context.pop(),
-          child: const Text('Quay lại đăng nhập'),
+          child: Text(l.authLogin),
         ),
       ],
     );

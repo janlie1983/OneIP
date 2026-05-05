@@ -2,9 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/models/industrial_zone_model.dart';
 import '../providers/site_selection_provider.dart';
+
+String _regionLabel(AppLocalizations l, String region) {
+  switch (region) {
+    case 'North':
+      return l.regionNorth;
+    case 'Central':
+      return l.regionCentral;
+    case 'South':
+      return l.regionSouth;
+    default:
+      return region;
+  }
+}
 
 class ZoneDetailScreen extends ConsumerStatefulWidget {
   final String zoneId;
@@ -38,6 +52,7 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen>
   }
 
   Future<void> _saveContactLead(IndustrialZone zone) async {
+    final l = AppLocalizations.of(context)!;
     setState(() => _savingLead = true);
     try {
       final repo = ref.read(siteSelectionRepositoryProvider);
@@ -45,8 +60,8 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen>
       await repo.saveContactLead(user?.id, zone);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Yêu cầu tư vấn đã được ghi nhận!'),
+          SnackBar(
+            content: Text(l.contactLeadSuccess),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
           ),
@@ -54,9 +69,10 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen>
       }
     } catch (_) {
       if (mounted) {
+        final l2 = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Không thể gửi yêu cầu. Vui lòng thử lại.'),
+          SnackBar(
+            content: Text(l2.contactLeadError),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
           ),
@@ -69,6 +85,7 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final zone = widget.zone ?? ref.watch(zoneByIdProvider(widget.zoneId));
 
     if (zone == null) {
@@ -80,7 +97,7 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen>
             icon: const Icon(Icons.arrow_back_ios),
             onPressed: () => context.pop(),
           ),
-          title: const Text('Chi tiết KCN'),
+          title: Text(l.zoneDetailTitle),
         ),
         body: const Center(child: CircularProgressIndicator(color: AppColors.navy)),
       );
@@ -93,7 +110,7 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen>
       backgroundColor: AppColors.backgroundLight,
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          _buildSliverAppBar(context, zone, isComparing, compareZones),
+          _buildSliverAppBar(context, l, zone, isComparing, compareZones),
           SliverPersistentHeader(
             pinned: true,
             delegate: _TabBarDelegate(tabController: _tabController),
@@ -108,12 +125,13 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen>
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomBar(context, zone),
+      bottomNavigationBar: _buildBottomBar(context, l, zone),
     );
   }
 
   Widget _buildSliverAppBar(
     BuildContext context,
+    AppLocalizations l,
     IndustrialZone zone,
     bool isComparing,
     List<IndustrialZone> compareZones,
@@ -134,8 +152,8 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen>
             if (isComparing) {
               notifier.state = compareZones.where((z) => z.id != zone.id).toList();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Đã bỏ khỏi danh sách so sánh'),
+                SnackBar(
+                  content: Text(l.compareRemovedMessage),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -143,18 +161,18 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen>
               notifier.state = [...compareZones, zone];
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: const Text('Đã thêm vào so sánh'),
+                  content: Text(l.compareAddedMessage),
                   behavior: SnackBarBehavior.floating,
                   action: SnackBarAction(
-                    label: 'Xem so sánh',
+                    label: l.compareViewAction,
                     onPressed: () => context.push('/zone-compare'),
                   ),
                 ),
               );
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Tối đa 3 khu để so sánh'),
+                SnackBar(
+                  content: Text(l.compareMaxZones),
                   backgroundColor: AppColors.warning,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -165,16 +183,16 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen>
             isComparing ? Icons.compare_arrows : Icons.add_chart_outlined,
             color: isComparing ? AppColors.gold : Colors.white,
           ),
-          tooltip: isComparing ? 'Bỏ so sánh' : 'Thêm so sánh',
+          tooltip: isComparing ? l.compareRemoveTooltip : l.compareAddTooltip,
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
-        background: _buildHeroImage(zone),
+        background: _buildHeroImage(l, zone),
       ),
     );
   }
 
-  Widget _buildHeroImage(IndustrialZone zone) {
+  Widget _buildHeroImage(AppLocalizations l, IndustrialZone zone) {
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -213,7 +231,11 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen>
               ),
               const SizedBox(height: 4),
               Text(
-                '${zone.developer ?? ''} • ${zone.establishedYear != null ? 'Thành lập ${zone.establishedYear}' : ''}',
+                [
+                  if (zone.developer != null) zone.developer!,
+                  if (zone.establishedYear != null)
+                    l.zoneEstablishedYear(zone.establishedYear!),
+                ].join(' • '),
                 style: const TextStyle(color: Colors.white70, fontSize: 13),
               ),
             ],
@@ -243,7 +265,7 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen>
     );
   }
 
-  Widget _buildBottomBar(BuildContext context, IndustrialZone zone) {
+  Widget _buildBottomBar(BuildContext context, AppLocalizations l, IndustrialZone zone) {
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -260,7 +282,7 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen>
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                 )
               : const Icon(Icons.support_agent, size: 20),
-          label: const Text('Liên hệ tư vấn'),
+          label: Text(l.siteSelectionContact),
         ),
       ),
     );
@@ -275,60 +297,48 @@ class _OverviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           _InfoSection(
-            title: 'Thông tin chung',
+            title: l.zoneGeneralInfo,
             rows: [
-              _InfoRow('Tỉnh/Thành phố', zone.province),
-              _InfoRow('Vùng', _regionLabel(zone.region)),
-              _InfoRow('Chủ đầu tư', zone.developer ?? '-'),
-              _InfoRow('Quốc tịch CĐT', zone.developerNationality ?? '-'),
-              _InfoRow('Tổng diện tích', zone.totalAreaHa != null ? '${zone.totalAreaHa} ha' : '-'),
-              _InfoRow('Diện tích còn trống', zone.availableAreaHa != null ? '${zone.availableAreaHa} ha' : '-'),
-              _InfoRow('Tỷ lệ lấp đầy', zone.occupancyRate != null ? '${zone.occupancyRate!.toStringAsFixed(0)}%' : '-'),
-              _InfoRow('Diện tích thuê tối thiểu', zone.minLeaseAreaM2 != null ? '${zone.minLeaseAreaM2!.toStringAsFixed(0)} m²' : '-'),
+              _InfoRow(l.zoneProvinceLabel, zone.province),
+              _InfoRow(l.zoneRegionLabel, _regionLabel(l, zone.region)),
+              _InfoRow(l.zoneDeveloperLabel, zone.developer ?? '-'),
+              _InfoRow(l.zoneDeveloperNationalityLabel, zone.developerNationality ?? '-'),
+              _InfoRow(l.zoneTotalAreaLabel, zone.totalAreaHa != null ? '${zone.totalAreaHa} ha' : '-'),
+              _InfoRow(l.zoneAvailableAreaLabel, zone.availableAreaHa != null ? '${zone.availableAreaHa} ha' : '-'),
+              _InfoRow(l.zoneOccupancyLabel, zone.occupancyRate != null ? '${zone.occupancyRate!.toStringAsFixed(0)}%' : '-'),
+              _InfoRow(l.zoneMinLeaseAreaLabel, zone.minLeaseAreaM2 != null ? '${zone.minLeaseAreaM2!.toStringAsFixed(0)} m²' : '-'),
             ],
           ),
           const SizedBox(height: 12),
           _InfoSection(
-            title: 'Giá & Ưu đãi',
+            title: l.zonePriceIncentives,
             rows: [
-              _InfoRow('Giá thuê đất', zone.leasePriceUsd != null ? '\$${zone.leasePriceUsd}/m²/năm' : 'Liên hệ'),
-              _InfoRow('Phí dịch vụ', zone.serviceFeeUsd != null ? '\$${zone.serviceFeeUsd}/m²/tháng' : '-'),
-              _InfoRow('Ưu đãi thuế', zone.taxIncentiveYears != null ? '${zone.taxIncentiveYears} năm' : '-'),
-              _InfoRow('Thuế suất ưu đãi', zone.taxIncentiveRate != null ? '${zone.taxIncentiveRate}%' : '-'),
+              _InfoRow(l.zoneLeasePriceLabel, zone.leasePriceUsd != null ? '\$${zone.leasePriceUsd}/m²/năm' : l.commonContact),
+              _InfoRow(l.zoneServiceFeeLabel, zone.serviceFeeUsd != null ? '\$${zone.serviceFeeUsd}/m²/tháng' : '-'),
+              _InfoRow(l.zoneTaxIncentiveLabel, zone.taxIncentiveYears != null ? '${zone.taxIncentiveYears} năm' : '-'),
+              _InfoRow(l.zoneTaxRateLabel, zone.taxIncentiveRate != null ? '${zone.taxIncentiveRate}%' : '-'),
             ],
           ),
           const SizedBox(height: 12),
-          _IndustriesSection(industries: zone.industriesSupported),
+          _IndustriesSection(title: l.zoneIndustriesTitle, industries: zone.industriesSupported),
           const SizedBox(height: 12),
           if (zone.contactEmail != null || zone.website != null)
             _InfoSection(
-              title: 'Liên hệ',
+              title: l.zoneContactSection,
               rows: [
-                if (zone.contactEmail != null) _InfoRow('Email', zone.contactEmail!),
-                if (zone.website != null) _InfoRow('Website', zone.website!),
+                if (zone.contactEmail != null) _InfoRow(l.zoneEmailLabel, zone.contactEmail!),
+                if (zone.website != null) _InfoRow(l.zoneWebsiteLabel, zone.website!),
               ],
             ),
         ],
       ),
     );
-  }
-
-  String _regionLabel(String region) {
-    switch (region) {
-      case 'North':
-        return 'Miền Bắc';
-      case 'Central':
-        return 'Miền Trung';
-      case 'South':
-        return 'Miền Nam';
-      default:
-        return region;
-    }
   }
 }
 
@@ -340,6 +350,7 @@ class _InfrastructureTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -347,17 +358,17 @@ class _InfrastructureTab extends StatelessWidget {
           _ScoresSection(zone: zone),
           const SizedBox(height: 12),
           _InfoSection(
-            title: 'Tiện ích',
+            title: l.zoneUtilitiesTitle,
             rows: [
-              _InfoRow('Điện', zone.utilitiesPowerKv ?? 'Có sẵn'),
-              _InfoRow('Nước sạch', zone.utilitiesWater ? '✓ Có sẵn' : '✗ Không có'),
-              _InfoRow('Xử lý nước thải', zone.utilitiesWastewater ? '✓ Có sẵn' : '✗ Không có'),
-              _InfoRow('Internet cáp quang', zone.fiberInternet ? '✓ Có sẵn' : '✗ Không có'),
+              _InfoRow(l.zoneUtilitiesPower, zone.utilitiesPowerKv ?? l.commonAvailable),
+              _InfoRow(l.zoneUtilitiesWater, zone.utilitiesWater ? '✓ ${l.commonAvailable}' : '✗ ${l.commonNotAvailable}'),
+              _InfoRow(l.zoneUtilitiesWastewater, zone.utilitiesWastewater ? '✓ ${l.commonAvailable}' : '✗ ${l.commonNotAvailable}'),
+              _InfoRow(l.zoneUtilitiesFiber, zone.fiberInternet ? '✓ ${l.commonAvailable}' : '✗ ${l.commonNotAvailable}'),
             ],
           ),
           if (zone.certifications.isNotEmpty) ...[
             const SizedBox(height: 12),
-            _CertificationsSection(certifications: zone.certifications),
+            _CertificationsSection(title: l.zoneCertificationsTitle, certifications: zone.certifications),
           ],
         ],
       ),
@@ -373,17 +384,18 @@ class _LocationTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           _InfoSection(
-            title: 'Khoảng cách vận chuyển',
+            title: l.zoneDistancesTitle,
             rows: [
-              _InfoRow('Đến cảng biển gần nhất', zone.distanceToSeaportKm != null ? '${zone.distanceToSeaportKm} km' : '-'),
-              _InfoRow('Đến sân bay gần nhất', zone.distanceToAirportKm != null ? '${zone.distanceToAirportKm} km' : '-'),
-              _InfoRow('Đến Hà Nội', zone.distanceToHanoiKm != null ? '${zone.distanceToHanoiKm} km' : '-'),
-              _InfoRow('Đến TP.HCM', zone.distanceToHcmKm != null ? '${zone.distanceToHcmKm} km' : '-'),
+              _InfoRow(l.zoneSeaportDistLabel, zone.distanceToSeaportKm != null ? '${zone.distanceToSeaportKm} km' : '-'),
+              _InfoRow(l.zoneAirportDistLabel, zone.distanceToAirportKm != null ? '${zone.distanceToAirportKm} km' : '-'),
+              _InfoRow(l.zoneHanoiLabel, zone.distanceToHanoiKm != null ? '${zone.distanceToHanoiKm} km' : '-'),
+              _InfoRow(l.zoneHcmLabel, zone.distanceToHcmKm != null ? '${zone.distanceToHcmKm} km' : '-'),
             ],
           ),
           const SizedBox(height: 12),
@@ -474,6 +486,7 @@ class _ScoresSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -484,30 +497,30 @@ class _ScoresSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Điểm đánh giá',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.navy),
+          Text(
+            l.zoneScoresTitle,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.navy),
           ),
           const SizedBox(height: 16),
           _ScoreBarDetail(
-            label: 'Hạ tầng',
+            label: l.zoneInfraScore,
             value: zone.infraScore ?? 0,
             color: AppColors.navy,
-            description: 'Đường sá, điện nước, viễn thông',
+            description: l.zoneInfraDesc,
           ),
           const SizedBox(height: 12),
           _ScoreBarDetail(
-            label: 'Lao động',
+            label: l.zoneLaborScore,
             value: zone.laborScore ?? 0,
             color: AppColors.gold,
-            description: 'Nguồn lao động, tay nghề khu vực',
+            description: l.zoneLaborDesc,
           ),
           const SizedBox(height: 12),
           _ScoreBarDetail(
-            label: 'Logistics',
+            label: l.zoneLogisticsScore,
             value: zone.logisticsScore ?? 0,
             color: AppColors.info,
-            description: 'Cảng biển, sân bay, giao thông',
+            description: l.zoneLogisticsDesc,
           ),
         ],
       ),
@@ -564,8 +577,9 @@ class _ScoreBarDetail extends StatelessWidget {
 }
 
 class _IndustriesSection extends StatelessWidget {
+  final String title;
   final List<String> industries;
-  const _IndustriesSection({required this.industries});
+  const _IndustriesSection({required this.title, required this.industries});
 
   @override
   Widget build(BuildContext context) {
@@ -580,9 +594,9 @@ class _IndustriesSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Ngành công nghiệp phù hợp',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.navy),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.navy),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -603,8 +617,9 @@ class _IndustriesSection extends StatelessWidget {
 }
 
 class _CertificationsSection extends StatelessWidget {
+  final String title;
   final List<String> certifications;
-  const _CertificationsSection({required this.certifications});
+  const _CertificationsSection({required this.title, required this.certifications});
 
   @override
   Widget build(BuildContext context) {
@@ -619,9 +634,9 @@ class _CertificationsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Chứng nhận',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.navy),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.navy),
           ),
           const SizedBox(height: 12),
           ...certifications.map((cert) => Padding(
@@ -646,6 +661,7 @@ class _MapPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Container(
       height: 180,
       decoration: BoxDecoration(
@@ -667,9 +683,9 @@ class _MapPlaceholder extends StatelessWidget {
                 color: AppColors.navy,
               ),
             ),
-            const Text(
-              'Bản đồ sẽ được cập nhật',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            Text(
+              l.zoneMapComingSoon,
+              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -684,6 +700,7 @@ class _LogisticsScore extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -694,31 +711,31 @@ class _LogisticsScore extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Đánh giá Logistics',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.navy),
+          Text(
+            l.zoneLogisticsTitle,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.navy),
           ),
           const SizedBox(height: 12),
           _LogisticsItem(
             icon: Icons.directions_boat,
-            label: 'Kết nối cảng biển',
+            label: l.zoneSeaportConnection,
             description: zone.distanceToSeaportKm != null
-                ? '${zone.distanceToSeaportKm} km đến cảng gần nhất'
-                : 'Không có thông tin',
+                ? l.zoneSeaportKmDesc(zone.distanceToSeaportKm!.toStringAsFixed(0))
+                : l.zoneNoInfo,
             isGood: (zone.distanceToSeaportKm ?? 999) < 50,
           ),
           _LogisticsItem(
             icon: Icons.flight,
-            label: 'Kết nối sân bay',
+            label: l.zoneAirportConnection,
             description: zone.distanceToAirportKm != null
-                ? '${zone.distanceToAirportKm} km đến sân bay'
-                : 'Không có thông tin',
+                ? l.zoneAirportKmDesc(zone.distanceToAirportKm!.toStringAsFixed(0))
+                : l.zoneNoInfo,
             isGood: (zone.distanceToAirportKm ?? 999) < 60,
           ),
           _LogisticsItem(
             icon: Icons.score,
-            label: 'Điểm Logistics tổng thể',
-            description: 'Dựa trên đánh giá tổng hợp',
+            label: l.zoneLogisticsOverall,
+            description: l.zoneLogisticsOverallDesc,
             isGood: (zone.logisticsScore ?? 0) >= 7,
           ),
         ],
@@ -830,6 +847,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final l = AppLocalizations.of(context)!;
     return Container(
       color: Colors.white,
       child: TabBar(
@@ -837,10 +855,10 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
         labelColor: AppColors.navy,
         unselectedLabelColor: AppColors.textSecondary,
         indicatorColor: AppColors.navy,
-        tabs: const [
-          Tab(text: 'Tổng quan'),
-          Tab(text: 'Hạ tầng & Tiện ích'),
-          Tab(text: 'Vị trí & Logistics'),
+        tabs: [
+          Tab(text: l.tabOverview),
+          Tab(text: l.tabInfraUtilities),
+          Tab(text: l.tabLocationLogistics),
         ],
       ),
     );
