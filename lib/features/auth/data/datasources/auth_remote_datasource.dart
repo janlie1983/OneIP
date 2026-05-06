@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_config.dart';
+import '../../domain/models/user_model.dart';
 
 class AuthRemoteDataSource {
   SupabaseClient get _client => SupabaseConfig.client;
@@ -19,18 +20,24 @@ class AuthRemoteDataSource {
     required String email,
     required String password,
     required String fullName,
-    required String companyName,
-    required String role,
+    required UserRole role,
   }) async {
-    await _client.auth.signUp(
+    final response = await _client.auth.signUp(
       email: email,
       password: password,
-      data: {
-        'full_name': fullName,
-        'company_name': companyName,
-        'role': role,
-      },
+      data: {'full_name': fullName},
     );
+
+    final userId = response.user?.id;
+    if (userId != null) {
+      await _client.from('profiles').upsert({
+        'id': userId,
+        'email': email,
+        'full_name': fullName,
+        'role': role.value,
+        'role_selected_at': DateTime.now().toIso8601String(),
+      });
+    }
   }
 
   Future<void> signInWithGoogle() async {

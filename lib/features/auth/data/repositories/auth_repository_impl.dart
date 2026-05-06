@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../domain/models/user_model.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_datasource.dart';
 
@@ -25,14 +26,12 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
     required String fullName,
-    required String companyName,
-    required String role,
+    required UserRole role,
   }) =>
       _dataSource.signUpWithEmail(
         email: email,
         password: password,
         fullName: fullName,
-        companyName: companyName,
         role: role,
       );
 

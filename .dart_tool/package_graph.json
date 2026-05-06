@@ -163,6 +163,15 @@
       ]
     },
     {
+      "name": "intl",
+      "version": "0.20.2",
+      "dependencies": [
+        "clock",
+        "meta",
+        "path"
+      ]
+    },
+    {
       "name": "flutter_dotenv",
       "version": "5.2.1",
       "dependencies": [
@@ -320,15 +329,6 @@
       "dependencies": [
         "flutter",
         "intl",
-        "path"
-      ]
-    },
-    {
-      "name": "intl",
-      "version": "0.20.2",
-      "dependencies": [
-        "clock",
-        "meta",
         "path"
       ]
     },
