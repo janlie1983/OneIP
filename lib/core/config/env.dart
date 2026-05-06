@@ -15,6 +15,10 @@ class Env {
 
   static String get supabaseUrl => dotenv.env['SUPABASE_URL'] ?? '';
   static String get supabaseAnonKey => dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+  static const String googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue: '',
+  );
   static Flavor get environment => _flavor;
   static bool get isDevelopment => _flavor == Flavor.development;
   static bool get isProduction => _flavor == Flavor.production;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/theme/app_colors.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
@@ -43,7 +44,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           final loc = state.matchedLocation;
           final isAuthRoute = loc == '/login' ||
               loc == '/register' ||
-              loc == '/forgot-password';
+              loc == '/forgot-password' ||
+              loc == '/auth/callback';
 
           if (!isAuthenticated && !isAuthRoute) return '/login';
           if (isAuthenticated && isAuthRoute) return '/home/site-selection';
@@ -65,6 +67,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/forgot-password',
         builder: (context, s) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/auth/callback',
+        builder: (context, s) => const _AuthCallbackScreen(),
       ),
       GoRoute(
         path: '/zone-detail/:zoneId',
@@ -112,6 +118,36 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+class _AuthCallbackScreen extends StatefulWidget {
+  const _AuthCallbackScreen();
+
+  @override
+  State<_AuthCallbackScreen> createState() => _AuthCallbackScreenState();
+}
+
+class _AuthCallbackScreenState extends State<_AuthCallbackScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _exchangeCode();
+  }
+
+  Future<void> _exchangeCode() async {
+    final uri = GoRouterState.of(context).uri;
+    try {
+      await Supabase.instance.client.auth.getSessionFromUrl(uri);
+    } catch (_) {}
+    if (mounted) context.go('/home/site-selection');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
+  }
+}
 
 class _HomeShell extends StatelessWidget {
   final Widget child;

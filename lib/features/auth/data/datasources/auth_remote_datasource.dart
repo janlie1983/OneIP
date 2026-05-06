@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../domain/models/user_model.dart';
@@ -41,7 +42,12 @@ class AuthRemoteDataSource {
   }
 
   Future<void> signInWithGoogle() async {
-    await _client.auth.signInWithOAuth(OAuthProvider.google);
+    await _client.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: kIsWeb
+          ? '${Uri.base.origin}/auth/callback'
+          : 'io.supabase.oneip://login-callback',
+    );
   }
 
   Future<void> signOut() async {
