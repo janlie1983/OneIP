@@ -18,6 +18,10 @@ import '../features/site_selection/presentation/screens/compare_screen.dart';
 import '../features/site_selection/presentation/screens/site_selection_screen.dart';
 import '../features/site_selection/presentation/screens/zone_detail_screen.dart';
 import '../features/site_selection/domain/models/industrial_zone_model.dart';
+import '../features/subscription/domain/models/pending_payment_model.dart';
+import '../features/subscription/presentation/screens/payment_screen.dart';
+import '../features/subscription/presentation/screens/payment_test_screen.dart';
+import '../features/subscription/presentation/screens/subscription_screen.dart';
 
 class _AuthChangeNotifier extends ChangeNotifier {
   _AuthChangeNotifier(Ref ref) {
@@ -71,6 +75,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/auth/callback',
         builder: (context, s) => const _AuthCallbackScreen(),
+      ),
+      GoRoute(
+        path: '/subscription',
+        builder: (context, s) => const SubscriptionScreen(),
+      ),
+      GoRoute(
+        path: '/payment',
+        builder: (context, s) =>
+            PaymentScreen(payment: s.extra as PendingPaymentModel),
+      ),
+      GoRoute(
+        path: '/dev/payment-test',
+        builder: (context, s) => const PaymentTestScreen(),
       ),
       GoRoute(
         path: '/zone-detail/:zoneId',

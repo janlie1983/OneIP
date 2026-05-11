@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/loading_overlay.dart';
@@ -154,14 +155,7 @@ class _ChecklistDetailScreenState
           )
         else
           TextButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(l.permitUpgradePdf),
-                  backgroundColor: AppColors.navy,
-                ),
-              );
-            },
+            onPressed: () => context.push('/subscription'),
             icon: const Icon(Icons.lock_outline,
                 size: 16, color: AppColors.gold),
             label: const Text(

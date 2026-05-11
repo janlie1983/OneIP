@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/config/env.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/language_switcher.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../lease_tracker/presentation/providers/lease_tracker_provider.dart';
+import '../../../subscription/presentation/providers/subscription_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -14,7 +15,9 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
     final user = ref.watch(currentUserProvider);
-    final isPremium = ref.watch(isPremiumProvider);
+    final isPremium = ref.watch(isProProvider);
+    final currentPlan = ref.watch(currentPlanProvider);
+    final subAsync = ref.watch(userSubscriptionProvider);
 
     final email = user?.email ?? '';
     final initial = email.isNotEmpty ? email[0].toUpperCase() : 'U';
@@ -39,12 +42,35 @@ class ProfileScreen extends ConsumerWidget {
               email: email,
               fullName: fullName,
               isPremium: isPremium,
+              currentPlan: currentPlan,
               l: l,
+            ),
+            const SizedBox(height: 12),
+            _SubscriptionCard(
+              isPremium: isPremium,
+              subAsync: subAsync,
             ),
             const SizedBox(height: 16),
             _LanguageCard(l: l),
             const SizedBox(height: 16),
             _AccountCard(l: l),
+            if (Env.isDevelopment) ...[
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () => context.push('/dev/payment-test'),
+                icon: const Icon(Icons.science_rounded, size: 18),
+                label: const Text('🧪 Test Payment (DEV)'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.purple,
+                  side: const BorderSide(color: Colors.purple),
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  textStyle: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
             const SizedBox(height: 32),
             OutlinedButton.icon(
               onPressed: () async {
@@ -75,6 +101,7 @@ class _UserInfoCard extends StatelessWidget {
   final String email;
   final String? fullName;
   final bool isPremium;
+  final String currentPlan;
   final AppLocalizations l;
 
   const _UserInfoCard({
@@ -82,12 +109,17 @@ class _UserInfoCard extends StatelessWidget {
     required this.email,
     required this.fullName,
     required this.isPremium,
+    required this.currentPlan,
     required this.l,
   });
 
   @override
   Widget build(BuildContext context) {
-    final planLabel = isPremium ? l.profilePlanPro : l.profilePlanFree;
+    final planLabel = switch (currentPlan) {
+      'pro' => l.profilePlanPro,
+      'enterprise' => 'Enterprise',
+      _ => l.profilePlanFree,
+    };
     final planColor = isPremium ? AppColors.gold : AppColors.textSecondary;
 
     return Container(
@@ -166,6 +198,98 @@ class _UserInfoCard extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SubscriptionCard extends ConsumerWidget {
+  final bool isPremium;
+  final AsyncValue subAsync;
+
+  const _SubscriptionCard({required this.isPremium, required this.subAsync});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isPremium ? Icons.workspace_premium : Icons.lock_outline,
+                color: isPremium ? AppColors.gold : AppColors.textSecondary,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isPremium ? 'Gói Pro đang hoạt động' : 'Gói miễn phí',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isPremium ? AppColors.navy : AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          if (isPremium)
+            subAsync.whenOrNull(
+              data: (sub) {
+                if (sub == null) return const SizedBox.shrink();
+                final days = sub.daysRemaining;
+                return Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Còn $days ngày • hết hạn ${sub.currentPeriodEnd?.toLocal().toString().substring(0, 10) ?? '—'}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                );
+              },
+            ) ??
+            const SizedBox.shrink(),
+          const SizedBox(height: 12),
+          if (!isPremium)
+            ElevatedButton.icon(
+              onPressed: () => context.push('/subscription'),
+              icon: const Icon(Icons.arrow_upward_rounded, size: 16),
+              label: const Text('Nâng cấp Pro — 299,000đ/tháng'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.gold,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(44),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                textStyle:
+                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                elevation: 0,
+              ),
+            )
+          else
+            OutlinedButton.icon(
+              onPressed: () => context.push('/subscription'),
+              icon: const Icon(Icons.manage_accounts_rounded, size: 16),
+              label: const Text('Quản lý gói'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.gold,
+                side: const BorderSide(color: AppColors.gold),
+                minimumSize: const Size.fromHeight(44),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                textStyle:
+                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
         ],
       ),
     );

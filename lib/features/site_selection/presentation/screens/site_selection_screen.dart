@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/paywall_gate.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../../domain/models/site_selection_query_model.dart';
@@ -608,7 +609,7 @@ class _ResultsView extends ConsumerWidget {
                       itemCount: zones.length,
                       itemBuilder: (context, i) {
                         final scored = zones[i];
-                        return IndustrialZoneCard(
+                        final card = IndustrialZoneCard(
                           zone: scored.zone,
                           score: scored.score,
                           animationIndex: i,
@@ -617,6 +618,8 @@ class _ResultsView extends ConsumerWidget {
                             extra: scored.zone,
                           ),
                         );
+                        if (i < 3) return card;
+                        return PaywallGate(lockedChild: card, child: card);
                       },
                     ),
             ),

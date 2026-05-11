@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../shared/widgets/paywall_gate.dart';
 import '../providers/lease_tracker_provider.dart';
 import '../widgets/alert_card.dart';
 import '../widgets/market_insight_card.dart';
@@ -135,7 +136,9 @@ class _MarketTabState extends ConsumerState<_MarketTab> {
         if (!isPremium) SliverToBoxAdapter(child: _FreeTierBanner()),
         SliverToBoxAdapter(child: _FilterBar()),
         SliverToBoxAdapter(child: _StatsSection()),
-        SliverToBoxAdapter(child: _ChartSection()),
+        SliverToBoxAdapter(
+          child: PaywallGate(child: _ChartSection()),
+        ),
         SliverToBoxAdapter(
           child: _PriceTableSection(
             sortColumn: _sortColumn,

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../subscription/presentation/providers/subscription_provider.dart';
 import '../../data/datasources/lease_tracker_remote_datasource.dart';
 import '../../data/repositories/lease_tracker_repository_impl.dart';
 import '../../domain/models/lease_rate_model.dart';
@@ -20,8 +21,8 @@ final selectedRegionProvider = StateProvider<String>((ref) => 'All');
 final selectedAssetTypeProvider = StateProvider<String>((ref) => 'factory');
 final selectedZoneProvider = StateProvider<String?>((ref) => 'VSIP Bac Ninh');
 
-// Pro/free gating (false = free tier)
-final isPremiumProvider = StateProvider<bool>((ref) => false);
+// Pro/free gating — derived from subscription
+final isPremiumProvider = Provider<bool>((ref) => ref.watch(isProProvider));
 
 // ── Data providers ────────────────────────────────────────────────────────────
 
