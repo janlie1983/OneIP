@@ -2,15 +2,14 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 serve(async (req) => {
-  const apiKey =
-    req.headers.get('apikey') ||
-    req.headers.get('Authorization')?.replace('Bearer ', '')
+  const authHeader = req.headers.get('Authorization') || ''
+  const apiKey = authHeader.replace('Apikey ', '').trim()
   if (apiKey !== Deno.env.get('SEPAY_API_KEY')) {
     return new Response('Unauthorized', { status: 401 })
   }
 
   const payload = await req.json()
-  const { transferAmount, description, transferType, referenceCode } = payload
+  const { transferAmount, content, transferType } = payload
 
   if (transferType !== 'in') {
     return new Response('OK', { status: 200 })
@@ -21,17 +20,13 @@ serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
-  // Find pending payment whose transfer_code appears in description
-  const searchCode = referenceCode ?? description
   const { data: payments } = await supabase
     .from('pending_payments')
     .select('*')
     .eq('status', 'pending')
 
   const payment = payments?.find(
-    (p: { transfer_code: string }) =>
-      description?.includes(p.transfer_code) ||
-      referenceCode?.includes(p.transfer_code),
+    (p: { transfer_code: string }) => content?.includes(p.transfer_code),
   )
 
   if (!payment) {
