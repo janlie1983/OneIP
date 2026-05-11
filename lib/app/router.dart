@@ -6,22 +6,51 @@ import '../core/theme/app_colors.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
+import '../features/auth/presentation/screens/register_incentive_screen.dart';
 import '../features/auth/presentation/screens/register_screen.dart';
+import '../features/home/presentation/screens/home_screen.dart';
+import '../features/home/presentation/screens/splash_screen.dart';
 import '../features/lease_tracker/presentation/screens/lease_tracker_screen.dart';
 import '../features/permit_checklist/domain/models/user_checklist_model.dart';
-import '../l10n/app_localizations.dart';
 import '../features/permit_checklist/presentation/screens/checklist_detail_screen.dart';
 import '../features/permit_checklist/presentation/screens/permit_checklist_screen.dart';
 import '../features/permit_checklist/presentation/screens/template_selector_screen.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
+import '../features/site_selection/domain/models/industrial_zone_model.dart';
 import '../features/site_selection/presentation/screens/compare_screen.dart';
 import '../features/site_selection/presentation/screens/site_selection_screen.dart';
 import '../features/site_selection/presentation/screens/zone_detail_screen.dart';
-import '../features/site_selection/domain/models/industrial_zone_model.dart';
 import '../features/subscription/domain/models/pending_payment_model.dart';
 import '../features/subscription/presentation/screens/payment_screen.dart';
 import '../features/subscription/presentation/screens/payment_test_screen.dart';
 import '../features/subscription/presentation/screens/subscription_screen.dart';
+import '../l10n/app_localizations.dart';
+
+// ── Transitions ───────────────────────────────────────────────────────────────
+
+CustomTransitionPage<void> _fadePage(LocalKey key, Widget child) =>
+    CustomTransitionPage(
+      key: key,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 220),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+          FadeTransition(opacity: animation, child: child),
+    );
+
+CustomTransitionPage<void> _slideUpPage(LocalKey key, Widget child) =>
+    CustomTransitionPage(
+      key: key,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 300),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+          SlideTransition(
+        position: Tween(begin: const Offset(0, 0.07), end: Offset.zero)
+            .animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+        child: FadeTransition(opacity: animation, child: child),
+      ),
+    );
+
+// ── Auth notifier ─────────────────────────────────────────────────────────────
 
 class _AuthChangeNotifier extends ChangeNotifier {
   _AuthChangeNotifier(Ref ref) {
@@ -33,12 +62,14 @@ final _authChangeNotifierProvider = Provider<_AuthChangeNotifier>((ref) {
   return _AuthChangeNotifier(ref);
 });
 
+// ── Router ────────────────────────────────────────────────────────────────────
+
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = ref.watch(_authChangeNotifierProvider);
 
   return GoRouter(
     refreshListenable: notifier,
-    initialLocation: '/login',
+    initialLocation: '/splash',
     redirect: (context, state) {
       final authAsync = ref.read(authStateProvider);
 
@@ -46,95 +77,178 @@ final routerProvider = Provider<GoRouter>((ref) {
         data: (authState) {
           final isAuthenticated = authState.session != null;
           final loc = state.matchedLocation;
+
+          final isPublicRoute = loc == '/splash' ||
+              loc == '/' ||
+              loc == '/login' ||
+              loc == '/register' ||
+              loc == '/register-incentive' ||
+              loc == '/forgot-password' ||
+              loc.startsWith('/auth/') ||
+              loc == '/subscription' ||
+              loc.startsWith('/zones') ||
+              loc.startsWith('/zone-detail');
+
           final isAuthRoute = loc == '/login' ||
               loc == '/register' ||
               loc == '/forgot-password' ||
-              loc == '/auth/callback';
+              loc.startsWith('/auth/');
 
-          if (!isAuthenticated && !isAuthRoute) return '/login';
+          // Block unauthenticated users from protected routes — show value first
+          if (!isAuthenticated && !isPublicRoute) {
+            final encoded = Uri.encodeComponent(loc);
+            return '/register-incentive?redirect=$encoded';
+          }
+
+          // Authenticated users leaving auth screens go to the app
           if (isAuthenticated && isAuthRoute) return '/home/site-selection';
+
           return null;
         },
         loading: () => null,
-        error: (err, stack) => '/login',
+        error: (err, stack) => '/',
       );
     },
     routes: [
+      // ── Splash ──────────────────────────────────────────────────────────────
+      GoRoute(
+        path: '/splash',
+        pageBuilder: (_, s) => _fadePage(s.pageKey, const SplashScreen()),
+      ),
+
+      // ── Public landing ───────────────────────────────────────────────────────
+      GoRoute(
+        path: '/',
+        pageBuilder: (_, s) => _fadePage(s.pageKey, const HomeScreen()),
+      ),
+
+      // ── Auth ────────────────────────────────────────────────────────────────
+      GoRoute(
+        path: '/register-incentive',
+        pageBuilder: (_, s) => _slideUpPage(
+          s.pageKey,
+          RegisterIncentiveScreen(
+            redirect: s.uri.queryParameters['redirect'],
+          ),
+        ),
+      ),
       GoRoute(
         path: '/login',
-        builder: (context, s) => const LoginScreen(),
+        pageBuilder: (_, s) => _slideUpPage(
+          s.pageKey,
+          LoginScreen(redirect: s.uri.queryParameters['redirect']),
+        ),
       ),
       GoRoute(
         path: '/register',
-        builder: (context, s) => const RegisterScreen(),
+        pageBuilder: (_, s) => _slideUpPage(
+          s.pageKey,
+          RegisterScreen(redirect: s.uri.queryParameters['redirect']),
+        ),
       ),
       GoRoute(
         path: '/forgot-password',
-        builder: (context, s) => const ForgotPasswordScreen(),
+        pageBuilder: (_, s) =>
+            _slideUpPage(s.pageKey, const ForgotPasswordScreen()),
       ),
       GoRoute(
         path: '/auth/callback',
-        builder: (context, s) => const _AuthCallbackScreen(),
+        builder: (_, s) => const _AuthCallbackScreen(),
+      ),
+
+      // ── Semi-public zone routes ──────────────────────────────────────────────
+      GoRoute(
+        path: '/zones',
+        pageBuilder: (_, s) =>
+            _fadePage(s.pageKey, const SiteSelectionScreen()),
       ),
       GoRoute(
-        path: '/subscription',
-        builder: (context, s) => const SubscriptionScreen(),
-      ),
-      GoRoute(
-        path: '/payment',
-        builder: (context, s) =>
-            PaymentScreen(payment: s.extra as PendingPaymentModel),
-      ),
-      GoRoute(
-        path: '/dev/payment-test',
-        builder: (context, s) => const PaymentTestScreen(),
+        path: '/zones/:zoneId',
+        pageBuilder: (_, s) => _fadePage(
+          s.pageKey,
+          ZoneDetailScreen(
+            zoneId: s.pathParameters['zoneId']!,
+            zone: s.extra as IndustrialZone?,
+          ),
+        ),
       ),
       GoRoute(
         path: '/zone-detail/:zoneId',
-        builder: (context, s) => ZoneDetailScreen(
-          zoneId: s.pathParameters['zoneId']!,
-          zone: s.extra as IndustrialZone?,
+        pageBuilder: (_, s) => _fadePage(
+          s.pageKey,
+          ZoneDetailScreen(
+            zoneId: s.pathParameters['zoneId']!,
+            zone: s.extra as IndustrialZone?,
+          ),
         ),
       ),
       GoRoute(
         path: '/zone-compare',
-        builder: (context, s) => const CompareScreen(),
+        pageBuilder: (_, s) => _fadePage(s.pageKey, const CompareScreen()),
+      ),
+
+      // ── Subscription ─────────────────────────────────────────────────────────
+      GoRoute(
+        path: '/subscription',
+        pageBuilder: (_, s) =>
+            _fadePage(s.pageKey, const SubscriptionScreen()),
       ),
       GoRoute(
+        path: '/payment',
+        pageBuilder: (_, s) => _slideUpPage(
+          s.pageKey,
+          PaymentScreen(payment: s.extra as PendingPaymentModel),
+        ),
+      ),
+      GoRoute(
+        path: '/dev/payment-test',
+        builder: (_, s) => const PaymentTestScreen(),
+      ),
+
+      // ── Permit ──────────────────────────────────────────────────────────────
+      GoRoute(
         path: '/permit-templates',
-        builder: (context, s) => const TemplateSelectorScreen(),
+        pageBuilder: (_, s) =>
+            _fadePage(s.pageKey, const TemplateSelectorScreen()),
       ),
       GoRoute(
         path: '/checklist-detail/:checklistId',
-        builder: (context, s) => ChecklistDetailScreen(
-          checklistId: s.pathParameters['checklistId']!,
-          checklist: s.extra as UserChecklist?,
+        pageBuilder: (_, s) => _fadePage(
+          s.pageKey,
+          ChecklistDetailScreen(
+            checklistId: s.pathParameters['checklistId']!,
+            checklist: s.extra as UserChecklist?,
+          ),
         ),
       ),
+
+      // ── Protected shell (auth required) ─────────────────────────────────────
       ShellRoute(
         builder: (context, s, child) => _HomeShell(child: child),
         routes: [
           GoRoute(
             path: '/home/site-selection',
-            builder: (context, s) => const SiteSelectionScreen(),
+            builder: (_, s) => const SiteSelectionScreen(),
           ),
           GoRoute(
             path: '/home/lease-tracker',
-            builder: (context, s) => const LeaseTrackerScreen(),
+            builder: (_, s) => const LeaseTrackerScreen(),
           ),
           GoRoute(
             path: '/home/permit-checklist',
-            builder: (context, s) => const PermitChecklistScreen(),
+            builder: (_, s) => const PermitChecklistScreen(),
           ),
           GoRoute(
             path: '/home/profile',
-            builder: (context, s) => const ProfileScreen(),
+            builder: (_, s) => const ProfileScreen(),
           ),
         ],
       ),
     ],
   );
 });
+
+// ── Auth callback ─────────────────────────────────────────────────────────────
 
 class _AuthCallbackScreen extends StatefulWidget {
   const _AuthCallbackScreen();
@@ -166,9 +280,10 @@ class _AuthCallbackScreenState extends State<_AuthCallbackScreen> {
   }
 }
 
+// ── Home shell ────────────────────────────────────────────────────────────────
+
 class _HomeShell extends StatelessWidget {
   final Widget child;
-
   const _HomeShell({required this.child});
 
   int _tabIndex(BuildContext context) {

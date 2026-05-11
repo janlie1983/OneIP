@@ -10,7 +10,9 @@ import '../widgets/auth_text_field.dart';
 import '../widgets/role_selector_card.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
-  const RegisterScreen({super.key});
+  final String? redirect;
+
+  const RegisterScreen({super.key, this.redirect});
 
   @override
   ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
@@ -75,7 +77,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             role: _selectedRole!,
           );
       if (mounted) {
-        context.go('/home/site-selection');
+        final dest = (widget.redirect?.isNotEmpty == true)
+            ? widget.redirect!
+            : '/home/site-selection';
+        context.go(dest);
       }
     } catch (e) {
       if (mounted) {

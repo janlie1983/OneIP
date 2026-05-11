@@ -11,7 +11,9 @@ import '../widgets/auth_text_field.dart';
 import '../widgets/social_login_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  final String? redirect;
+
+  const LoginScreen({super.key, this.redirect});
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -22,6 +24,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+
+  String get _redirectTarget =>
+      (widget.redirect?.isNotEmpty == true)
+          ? widget.redirect!
+          : '/home/site-selection';
 
   @override
   void dispose() {
@@ -38,6 +45,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
+      if (mounted) context.go(_redirectTarget);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -56,6 +64,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
     try {
       await ref.read(authRepositoryProvider).signInWithGoogle();
+      if (mounted) context.go(_redirectTarget);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -213,7 +222,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           style: const TextStyle(color: AppColors.textSecondary),
         ),
         TextButton(
-          onPressed: () => context.push(AppConstants.routeRegister),
+          onPressed: () {
+            final r = widget.redirect;
+            final dest = (r?.isNotEmpty == true)
+                ? '/register?redirect=${Uri.encodeComponent(r!)}'
+                : AppConstants.routeRegister;
+            context.push(dest);
+          },
           style: TextButton.styleFrom(
             padding: EdgeInsets.zero,
             minimumSize: Size.zero,

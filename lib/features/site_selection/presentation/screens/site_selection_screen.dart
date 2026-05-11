@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/providers/locale_provider.dart';
+import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../../shared/widgets/paywall_gate.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/primary_button.dart';
@@ -602,26 +604,42 @@ class _ResultsView extends ConsumerWidget {
             child: scoredAsync.when(
               loading: () => const Center(child: CircularProgressIndicator(color: AppColors.navy)),
               error: (e, _) => _ErrorState(onRetry: onReset),
-              data: (zones) => zones.isEmpty
-                  ? _EmptyState(onReset: onReset)
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(top: 4, bottom: 100),
-                      itemCount: zones.length,
-                      itemBuilder: (context, i) {
-                        final scored = zones[i];
-                        final card = IndustrialZoneCard(
-                          zone: scored.zone,
-                          score: scored.score,
-                          animationIndex: i,
-                          onTap: () => context.push(
-                            '/zone-detail/${scored.zone.id}',
-                            extra: scored.zone,
-                          ),
-                        );
-                        if (i < 3) return card;
-                        return PaywallGate(lockedChild: card, child: card);
-                      },
-                    ),
+              data: (zones) {
+                if (zones.isEmpty) return _EmptyState(onReset: onReset);
+
+                final authAsync = ref.watch(authStateProvider);
+                final isGuest =
+                    !(authAsync.whenOrNull(data: (s) => s.session != null) ?? false);
+                final showBanner = isGuest && zones.length > 3;
+                final extraItem = showBanner ? 1 : 0;
+
+                return ListView.builder(
+                  padding: const EdgeInsets.only(top: 4, bottom: 100),
+                  itemCount: zones.length + extraItem,
+                  itemBuilder: (context, i) {
+                    if (showBanner && i == 3) {
+                      return _GuestResultsBanner(totalCount: zones.length);
+                    }
+                    final zi = (showBanner && i > 3) ? i - 1 : i;
+                    final scored = zones[zi];
+                    final card = IndustrialZoneCard(
+                      zone: scored.zone,
+                      score: scored.score,
+                      animationIndex: zi,
+                      onTap: () => context.push(
+                        '/zone-detail/${scored.zone.id}',
+                        extra: scored.zone,
+                      ),
+                    );
+                    if (zi < 3) return card;
+                    return PaywallGate(
+                      level: GateLevel.guest,
+                      lockedChild: card,
+                      child: card,
+                    );
+                  },
+                );
+              },
             ),
           ),
         ],
@@ -737,6 +755,57 @@ class _ErrorState extends StatelessWidget {
             PrimaryButton(label: l.commonRetry, onPressed: onRetry),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _GuestResultsBanner extends ConsumerWidget {
+  final int totalCount;
+  const _GuestResultsBanner({required this.totalCount});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isVi = ref.watch(localeProvider).languageCode == 'vi';
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.navy.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.navy.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.lock_outline, color: AppColors.navy, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              isVi
+                  ? 'Đăng ký miễn phí để xem tất cả $totalCount kết quả'
+                  : 'Sign up free to see all $totalCount results',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.navy,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          FilledButton(
+            onPressed: () => context.go('/register-incentive'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.navy,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              isVi ? 'Đăng ký' : 'Sign Up',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
       ),
     );
   }

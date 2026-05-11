@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/providers/locale_provider.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../shared/widgets/paywall_gate.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../subscription/presentation/providers/subscription_provider.dart';
 import '../../domain/models/industrial_zone_model.dart';
 import '../providers/site_selection_provider.dart';
 
@@ -266,6 +269,12 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen>
   }
 
   Widget _buildBottomBar(BuildContext context, AppLocalizations l, IndustrialZone zone) {
+    final authAsync = ref.watch(authStateProvider);
+    final isLoggedIn =
+        authAsync.whenOrNull(data: (s) => s.session != null) ?? false;
+    final isPro = ref.watch(isProProvider);
+    final isVi = ref.watch(localeProvider).languageCode == 'vi';
+
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -274,15 +283,45 @@ class _ZoneDetailScreenState extends ConsumerState<ZoneDetailScreen>
           border: Border(top: BorderSide(color: AppColors.border)),
         ),
         child: ElevatedButton.icon(
-          onPressed: _savingLead ? null : () => _saveContactLead(zone),
+          onPressed: _savingLead
+              ? null
+              : () {
+                  if (!isLoggedIn) {
+                    context.push('/register-incentive');
+                  } else if (!isPro) {
+                    context.push('/subscription');
+                  } else {
+                    _saveContactLead(zone);
+                  }
+                },
           icon: _savingLead
               ? const SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
-              : const Icon(Icons.support_agent, size: 20),
-          label: Text(l.siteSelectionContact),
+              : Icon(
+                  !isLoggedIn
+                      ? Icons.person_add_outlined
+                      : !isPro
+                          ? Icons.workspace_premium_rounded
+                          : Icons.support_agent,
+                  size: 20,
+                ),
+          label: Text(
+            !isLoggedIn
+                ? (isVi ? 'Đăng ký để liên hệ' : 'Sign up to contact')
+                : !isPro
+                    ? (isVi ? 'Nâng cấp Pro để xem liên hệ' : 'Upgrade Pro to view contact')
+                    : l.siteSelectionContact,
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor:
+                !isLoggedIn || !isPro ? AppColors.gold : AppColors.navy,
+            foregroundColor:
+                !isLoggedIn || !isPro ? AppColors.navy : Colors.white,
+          ),
         ),
       ),
     );
@@ -329,12 +368,24 @@ class _OverviewTab extends StatelessWidget {
           _IndustriesSection(title: l.zoneIndustriesTitle, industries: zone.industriesSupported),
           const SizedBox(height: 12),
           if (zone.contactEmail != null || zone.website != null)
-            _InfoSection(
-              title: l.zoneContactSection,
-              rows: [
-                if (zone.contactEmail != null) _InfoRow(l.zoneEmailLabel, zone.contactEmail!),
-                if (zone.website != null) _InfoRow(l.zoneWebsiteLabel, zone.website!),
-              ],
+            PaywallGate(
+              level: GateLevel.pro,
+              lockedChild: _InfoSection(
+                title: l.zoneContactSection,
+                rows: [
+                  _InfoRow(l.zoneEmailLabel, '••••••@••••.com'),
+                  _InfoRow(l.zoneWebsiteLabel, 'www.••••••.com'),
+                ],
+              ),
+              child: _InfoSection(
+                title: l.zoneContactSection,
+                rows: [
+                  if (zone.contactEmail != null)
+                    _InfoRow(l.zoneEmailLabel, zone.contactEmail!),
+                  if (zone.website != null)
+                    _InfoRow(l.zoneWebsiteLabel, zone.website!),
+                ],
+              ),
             ),
         ],
       ),
