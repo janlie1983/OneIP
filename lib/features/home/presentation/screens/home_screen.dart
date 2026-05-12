@@ -4,6 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/providers/locale_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../listings/presentation/providers/listing_provider.dart';
+import '../../../listings/presentation/widgets/asset_type_tabs.dart';
+import '../../../listings/presentation/widgets/listing_card.dart';
+import '../../../listings/presentation/widgets/region_filter.dart';
 import '../../../site_selection/domain/models/industrial_zone_model.dart';
 import '../../../lease_tracker/domain/models/lease_rate_model.dart';
 import '../providers/public_home_provider.dart';
@@ -64,7 +68,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             _StatsBar(isVi: isVi),
             _QuickSearchSection(key: _searchKey),
-            _FeaturedZonesSection(isVi: isVi),
+            _FeaturedListingsSection(isVi: isVi),
             _LeaseRatesSection(key: _ratesKey, isVi: isVi),
             _HowItWorksSection(isVi: isVi),
             _CtaBanner(isVi: isVi),
@@ -467,50 +471,141 @@ class _AdvancedSearchButton extends ConsumerWidget {
   }
 }
 
-// ── Section 4: Featured KCN Cards ────────────────────────────────────────────
+// ── Section 4: Featured Listings ─────────────────────────────────────────────
 
-class _FeaturedZonesSection extends ConsumerWidget {
+class _FeaturedListingsSection extends ConsumerStatefulWidget {
   final bool isVi;
-  const _FeaturedZonesSection({required this.isVi});
+  const _FeaturedListingsSection({required this.isVi});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final zonesAsync = ref.watch(publicZonesProvider);
+  ConsumerState<_FeaturedListingsSection> createState() =>
+      _FeaturedListingsSectionState();
+}
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            isVi ? 'Khu công nghiệp nổi bật' : 'Featured Industrial Zones',
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: AppColors.navy,
-            ),
+class _FeaturedListingsSectionState
+    extends ConsumerState<_FeaturedListingsSection> {
+  String? _selectedAssetType;
+  String? _selectedRegion;
+
+  @override
+  Widget build(BuildContext context) {
+    final listingsAsync = ref.watch(featuredListingsProvider);
+    final isVi = widget.isVi;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 40, 24, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isVi
+                          ? 'BĐS Công nghiệp nổi bật'
+                          : 'Featured Industrial RE',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.navy,
+                      ),
+                    ),
+                    Text(
+                      isVi
+                          ? 'Nhà xưởng, kho, đất KCN cho thuê'
+                          : 'Factories, warehouses & industrial land',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            isVi
-                ? 'Dữ liệu được cập nhật hàng tháng'
-                : 'Data updated monthly',
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-            ),
+        ),
+        const SizedBox(height: 16),
+        listingsAsync.when(
+          loading: () =>
+              const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text('$e',
+                style:
+                    const TextStyle(color: AppColors.textSecondary)),
           ),
-          const SizedBox(height: 24),
-          zonesAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Text('$e'),
-            data: (zones) => Column(
-              children:
-                  zones.map((z) => _PublicZoneCard(zone: z, isVi: isVi)).toList(),
-            ),
-          ),
-        ],
-      ),
+          data: (listings) {
+            var filtered = listings;
+            if (_selectedAssetType != null) {
+              filtered = filtered
+                  .where((l) => l.assetType == _selectedAssetType)
+                  .toList();
+            }
+            if (_selectedRegion != null) {
+              filtered = filtered
+                  .where((l) => l.region == _selectedRegion)
+                  .toList();
+            }
+
+            return Column(
+              children: [
+                AssetTypeTabs(
+                  listings: listings,
+                  selected: _selectedAssetType,
+                  onSelected: (t) =>
+                      setState(() => _selectedAssetType = t),
+                ),
+                RegionFilter(
+                  listings: listings,
+                  selected: _selectedRegion,
+                  onSelected: (r) =>
+                      setState(() => _selectedRegion = r),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: filtered
+                        .take(6)
+                        .map((l) => Padding(
+                              padding:
+                                  const EdgeInsets.only(bottom: 12),
+                              child: ListingCard(listing: l),
+                            ))
+                        .toList(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.go('/listings'),
+                      icon: const Icon(Icons.arrow_forward, size: 16),
+                      label: Text(
+                        isVi
+                            ? 'Xem tất cả ${listings.length} bất động sản →'
+                            : 'View all ${listings.length} listings →',
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.navy,
+                        side: const BorderSide(color: AppColors.navy),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 14),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }

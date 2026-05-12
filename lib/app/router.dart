@@ -16,6 +16,11 @@ import '../features/permit_checklist/presentation/screens/checklist_detail_scree
 import '../features/permit_checklist/presentation/screens/permit_checklist_screen.dart';
 import '../features/permit_checklist/presentation/screens/template_selector_screen.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
+import '../features/listings/domain/models/listing_model.dart';
+import '../features/listings/presentation/screens/create_listing_screen.dart';
+import '../features/listings/presentation/screens/listing_detail_screen.dart';
+import '../features/listings/presentation/screens/listings_screen.dart';
+import '../features/listings/presentation/screens/my_listings_screen.dart';
 import '../features/site_selection/domain/models/industrial_zone_model.dart';
 import '../features/site_selection/presentation/screens/compare_screen.dart';
 import '../features/site_selection/presentation/screens/site_selection_screen.dart';
@@ -87,7 +92,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               loc.startsWith('/auth/') ||
               loc == '/subscription' ||
               loc.startsWith('/zones') ||
-              loc.startsWith('/zone-detail');
+              loc.startsWith('/zone-detail') ||
+              loc == '/listings' ||
+              loc.startsWith('/listings/') ||
+              loc == '/my-listings';
 
           final isAuthRoute = loc == '/login' ||
               loc == '/register' ||
@@ -154,6 +162,52 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/auth/callback',
         builder: (_, s) => const _AuthCallbackScreen(),
+      ),
+
+      // ── Listings (public, content gated) ────────────────────────────────────
+      GoRoute(
+        path: '/listings',
+        pageBuilder: (_, s) =>
+            _fadePage(s.pageKey, const ListingsScreen()),
+      ),
+      GoRoute(
+        path: '/listings/slug/:slug',
+        pageBuilder: (_, s) => _slideUpPage(
+          s.pageKey,
+          ListingDetailScreen(
+            id: s.pathParameters['slug']!,
+            initialListing: null,
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/listings/create',
+        pageBuilder: (_, s) => _slideUpPage(
+          s.pageKey,
+          const CreateListingScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/listings/:id',
+        pageBuilder: (_, s) => _slideUpPage(
+          s.pageKey,
+          ListingDetailScreen(
+            id: s.pathParameters['id']!,
+            initialListing: s.extra as Listing?,
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/listings/:id/edit',
+        pageBuilder: (_, s) => _slideUpPage(
+          s.pageKey,
+          CreateListingScreen(editListingId: s.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/my-listings',
+        pageBuilder: (_, s) =>
+            _fadePage(s.pageKey, const MyListingsScreen()),
       ),
 
       // ── Semi-public zone routes ──────────────────────────────────────────────

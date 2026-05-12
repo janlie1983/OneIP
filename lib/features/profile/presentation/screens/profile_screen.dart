@@ -54,6 +54,7 @@ class ProfileScreen extends ConsumerWidget {
             _LanguageCard(l: l),
             const SizedBox(height: 16),
             _AccountCard(l: l),
+            _SupplyCard(ref: ref),
             if (Env.isDevelopment) ...[
               const SizedBox(height: 16),
               OutlinedButton.icon(
@@ -400,6 +401,106 @@ class _AccountTile extends StatelessWidget {
             const Spacer(),
             const Icon(Icons.chevron_right,
                 color: AppColors.textSecondary, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Supply (Owner/Broker) Card ────────────────────────────────────────────────
+
+class _SupplyCard extends ConsumerWidget {
+  final WidgetRef ref;
+  const _SupplyCard({required this.ref});
+
+  @override
+  Widget build(BuildContext context, WidgetRef widgetRef) {
+    final role = widgetRef.watch(userRoleProvider);
+    if (!role.isSupply) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.gold.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'Quản lý BĐS',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.gold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            InkWell(
+              onTap: () => context.go('/my-listings'),
+              borderRadius: const BorderRadius.vertical(),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    const Icon(Icons.storefront_outlined,
+                        color: AppColors.navy, size: 20),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Quản lý listing của tôi',
+                      style: TextStyle(
+                          fontSize: 15, color: AppColors.textPrimary),
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.chevron_right,
+                        color: AppColors.textSecondary, size: 20),
+                  ],
+                ),
+              ),
+            ),
+            const Divider(height: 1, indent: 16),
+            InkWell(
+              onTap: () => context.push('/listings/create'),
+              borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    const Icon(Icons.add_business_outlined,
+                        color: AppColors.gold, size: 20),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Đăng listing mới',
+                      style: TextStyle(
+                          fontSize: 15, color: AppColors.textPrimary),
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.chevron_right,
+                        color: AppColors.textSecondary, size: 20),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

@@ -27,6 +27,7 @@ class _PublicNavbarState extends ConsumerState<PublicNavbar> {
     final isLoggedIn = authAsync.whenOrNull(data: (s) => s.session != null) ?? false;
     final locale = ref.watch(localeProvider);
     final isVi = locale.languageCode == 'vi';
+    final isSupply = ref.watch(isSupplyProvider);
 
     final isScrolled = widget.isScrolled;
 
@@ -74,20 +75,37 @@ class _PublicNavbarState extends ConsumerState<PublicNavbar> {
       ),
       leadingWidth: 120,
       actions: isWide
-          ? _wideActions(context, isLoggedIn, isVi)
+          ? _wideActions(context, isLoggedIn, isVi, isSupply)
           : _mobileActions(context, isLoggedIn, isVi),
     );
   }
 
   List<Widget> _wideActions(
-      BuildContext context, bool isLoggedIn, bool isVi) {
+      BuildContext context, bool isLoggedIn, bool isVi, bool isSupply) {
     return [
       _NavLink(label: isVi ? 'Tìm KCN' : 'Find IZ', onTap: () => context.go('/')),
+      _NavLink(
+        label: isVi ? 'BĐS Công nghiệp' : 'Industrial RE',
+        onTap: () => context.go('/listings'),
+      ),
       _NavLink(label: isVi ? 'Giá thuê' : 'Rates', onTap: () => context.go('/')),
       _NavLink(label: isVi ? 'Giấy phép' : 'Permits', onTap: () => context.go('/')),
       const SizedBox(width: 8),
       _LangToggle(isVi: isVi),
       const SizedBox(width: 8),
+      if (isLoggedIn && isSupply)
+        OutlinedButton.icon(
+          onPressed: () => context.push('/listings/create'),
+          icon: const Icon(Icons.add, size: 16),
+          label: Text(isVi ? 'Đăng listing' : 'Post Listing'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.gold,
+            side: const BorderSide(color: AppColors.gold),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          ),
+        ),
+      if (isLoggedIn && isSupply) const SizedBox(width: 8),
       if (isLoggedIn) ...[
         FilledButton(
           onPressed: () => context.go('/home/site-selection'),
